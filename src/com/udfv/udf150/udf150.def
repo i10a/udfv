@@ -1,0 +1,20 @@
+%%com.udfv.udf150
+
+%UDF_SparingTable UDF_CrcDesc
+@L
+Descriptor Tag:tag%base=com.udfv.ecma167
+Sparing Identifier:regid%base=com.udfv.ecma167
+Reallocation Table Len:uint16
+Reserved:bytes:2
+Sequence Number:uint32
+Map Entry:bytes:getReallocationTableLen().getIntValue()*8
+@
+
+%UDF_VirtualAllocTable150
+@I
+UDF_VirtualAllocTable
+@L
+VAT entry:bytes:getHintSize() - 36
+Entity Identifier:regid%base=com.udfv.ecma167
+Previous VAT ICB location:uint32
+@

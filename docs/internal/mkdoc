@@ -1,0 +1,6 @@
+#!/bin/sh
+
+#cat WHAT.TXT XML.TXT > q.TXT
+cat README.txt > q.TXT
+hwk2xml q.TXT >q.xml
+./xalan q.xml

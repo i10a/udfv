@@ -1,0 +1,31 @@
+%%com.udfv.udf102
+%UDF_LVInformation
+//
+// LVInformation
+//
+@L
+LVI Charset:charspec%base=com.udfv.ecma167
+Logical Volume Identifier:dstring:128
+LV Info1:dstring:36
+LV Info2:dstring:36
+LV Info3:dstring:36
+Implementation Id:regid%base=com.udfv.ecma167
+Implementation Use:bytes:128
+@
+
+%UDF_desc9_ImplUse
+@L
+Implementation Id:regid%base=com.udfv.ecma167
+Number of Files:uint32
+Number of Directories:uint32
+Minimum UDF Read Revision:uint16
+Minimum UDF Write Revision:uint16
+Maximum UDF Write Revision:uint16
+Implementation Use:bytes:getHintSize() - 46
+@
+
+%UDF_long_ad_ADImpUse
+@L
+Flags:uint16
+Imp Use:bytes:4
+@

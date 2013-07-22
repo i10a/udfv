@@ -1,0 +1,248 @@
+=
+= UDFV XML 仕様書
+=
+
+   1) 命名規則
+	UDFV XMLには二種類の XMLタグが存在する
+
+	- 名前付きタグ
+	- 無名タグ
+
+	名前つきタグはそれが何であるか(どのクラスに対応するか)意味が明確な
+        ところに使用する無名タグはそれ以外のところに使用する。
+
+	1-1) 名前付きタグ
+	   ECMA167で定義されているデスクリプタのメンバ名をそのまま名前にしたもの
+
+		- XMLのタグは原則小文字で記述し、名前は ECMA167に準じる
+		- 単語の区切の位置で「-」を入れる
+		- 長い単語は略称を仕様する。
+
+		名称		略称
+		Descriptors?	desc
+		Volume		vol
+		Sequence	seq
+		Maximum		max
+		Minimum		min
+		Location	loc
+		Length		len
+		Implementation	impl
+		Partitions?	part
+		Attributes?	attr
+		Allocation	alloc
+		Position	pos
+		Identifier	id
+
+	   名前つきタグは ECMA167で規定されるデータ順にXML的に並んでなければならない。
+
+	1-2)無名タグ
+		- 「UDF_」で始まる。
+		- Javaのクラス名に一致する。
+
+例)
+	1-3) 記述の例
+        <UDF_desc7>
+            <desc-tag>
+                <tag-id>7</tag-id>
+                <desc-version>3</desc-version>
+                <tag-checksum>61</tag-checksum>
+                <reserved size="1">=00</reserved>
+                <tag-serial-number>1</tag-serial-number>
+                <desc-crc>18622</desc-crc>
+                <desc-crc-len>8</desc-crc-len>
+                <tag-loc>36</tag-loc>
+            </desc-tag>
+            <vol-desc-seq-number>5</vol-desc-seq-number>
+            <number-of-alloc-desc>0</number-of-alloc-desc>
+            <alloc-desc size="0"/>
+        </UDF_desc7>
+
+
+   2) 基本クラス
+	もうそれ以上分解することが出来無いクラスを基本クラスと呼ぶ。
+	基本クラスでは <tag>4</tag>のようにテキストノードを間に入れて
+	値を表現する。
+
+   2-1)数値型
+
+	数値タイプとは UDF_uint8, UDF_uint16, UDF_uint32, UDF_uint64のいずれかのタイプの
+	タグである。数値タイプは直接数字をテキストで記述する。
+	例)
+            <access-type>4</access-type>
+
+   2-2) UDF_short_ad, UDF_long_ad, UDF_extent_ad のExtent Lengthで使用される数値型
+	は interpretation + ":" + lengthで記述する。
+
+	例)
+	 <extent-len>1:8192</extent-len>
+
+   2-3) バイトタイプ(UDF_bytes)
+
+	バイトタイプは size属性が必須である。
+
+	例)
+	4バイトの「0x41 0x42 0x43 0x44」というバイト列は 
+	<UDF_bytes size="4">ABCD</UDF_bytes>
+	と表現される。
+
+	可視化できない特殊な文字コードが含まれている場合は
+	Quoted Printable Encodeで表現する。
+
+	例)
+	4バイトの「0x00 0x01 0x02 0x03」というバイト列は
+
+	<UDF_bytes size="4">=00=01=02=03</UDF_bytes>
+
+	と表現される。
+
+	バイトデータは同じバイトが繰り返し並ぶことが多いため
+	視覚的に見やすくするため{}をつかって繰り返しを表現
+	することができる。
+
+	例)
+	2048バイトの「0x00... 0x00」というバイト列は
+
+	<UDF_bytes size="2048">=00{2048}</UDF_bytes>
+
+	と表現される。
+
+	どのようなバイト列があるのか事前にわかっている場合は
+	encoding属性を指定することにより、より見やすい表記が可能である。
+
+	例)
+	OSTA Compressed Unicodeでエンコードされた DVD_RTAVというデータは
+
+	<UDF_bytes encoding="OSTA Compressed Unicode" size="9">8:DVD_RTAV</UDF_bytes>
+
+	上のように表現可能である。この場合どのようにXMLで文字列を表記するか
+	はEncodingスキーマによる。
+
+    2-4) 子供を持つ UDF_bytes
+
+	UDF_bytesの大きな特徴は任意のUDF Elementを子供として持つことが
+	出来ることである。
+
+	例)
+	<UDF_bytes>
+	<UDF_desc257>
+	....
+	</UDF_desc257>
+	<UDF_desc257>
+	....
+	</UDF_desc257>
+	<UDF_bytes>
+
+	この場合<UDF_bytes>は それぞれの<UDF_desc257>をバイトに変換し
+	それを連結したバイトのと同等になる。
+
+	UDF_bytesの中に置くXMLタグは無名タグ(クラス名に等しい UDF_で始まるタグ)
+	でなくてはならない。
+
+   3) root
+	root Elementの名前は <udf>である。
+
+   3-1) <udf>の直下にある XMLノードは全て <UDF_Extent>型でなくてはならない。
+	(<system>,<partition>を除く) 
+
+   4) 全ての領域をextentで表現する。
+  
+	旧バージョンでは領域(extent)が分断しているとき、そのデータを表現
+	できないという問題があった。そこで、UDFVでは
+
+	<extent>なる XML Elementを用意しどこからどこまでの範囲のデータを
+	<extents>エレメント内の<extent>で指定できるようにした。
+
+   例1)
+	セクタ16から32Kおよびセクタ64から32Kのデータを表現するには次の
+	ようになる。
+
+  <UDF_Extent>
+        <extents>
+            <extent len="32768" off="0" sec="16"/>
+            <extent len="32768" off="32768" sec="64"/>
+        </extents>
+	...
+	...
+	...
+  </UDF_Extent>
+
+   例2)
+	パーティション1のLBN=0から 32Kおよび LBN=64から64Kのデータを表現する
+
+  <UDF_Extent>
+        <extents>
+            <extent len="32768" off="0" lbn="16" partno="1"/>
+            <extent len="65536" off="32768" lbn="64" partno="1"/>
+        </extents>
+	...
+	...
+	...
+  </UDF_Extent>
+
+
+※offは先頭から何セクタ目かがわかりやすいようにシステムが自動で挿入する。
+※<extent>タグは常にそれが入るタグの最初の要素として存在しなければならない。
+
+   5) パーティションの表現について
+
+	UDFのパーティションはかなり複雑であるが、最終的には <extent>のかた
+	まりとして表現できる。これは <udf>エレメントの子供エレメントとして
+	次の例えば次のように表現される。
+
+    例1)Spacering Partitoionが1つだけあるイメージ
+
+    <partitions>
+        <partmap partno="0">
+            <pm-type>Sparable Partition Map</pm-type>
+            <UDF_Extent>
+                <extents>
+                    <extent len="1055621120" off="0" sec="8576"/>
+                </extents>
+            </UDF_Extent>
+        </partmap>
+    </partition>
+
+    例2) Type1のパーティションが1つだけあるイメージ
+    <partition>
+        <partmap partno="0">
+            <pm-type>Type1 Partition Map</pm-type>
+            <UDF_Extent>
+                <extents>
+                    <extent len="1073182720" off="0" sec="272"/>
+                </extents>
+            </UDF_Extent>
+        </partmap>
+    </partition>
+
+    例3) Type1のパーティションが1つ、Metadata Partitionが1つあるイメージ
+	 Metadata Partitionには mainと mirrorがあるので、以下のように
+	 二つ列挙する。
+
+    <partition>
+        <partmap partno="0">
+            <pm-type>Type1 Partition Map</pm-type>
+            <UDF_Extent>
+                <extents>
+                    <extent len="4704960512" off="0" sec="272"/>
+                </extents>
+            </UDF_Extent>
+        </partmap>
+        <partmap partno="1">
+            <pm-type>Metadata Partition Map</pm-type>
+            <metadata mirror="no">
+                <UDF_Extent>
+                    <extents>
+                        <extent len="2097152" off="0" sec="416"/>
+                    </extents>
+                </UDF_Extent>
+            </metadata>
+            <metadata mirror="yes">
+                <UDF_Extent>
+                    <extents>
+                        <extent len="2097152" off="0" sec="2296592"/>
+                    </extents>
+                </UDF_Extent>
+            </metadata>
+        </partmap>
+    </partition>
+

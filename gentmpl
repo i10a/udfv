@@ -1,0 +1,42 @@
+#!/usr/bin/perl
+
+$srcdir = shift @ARGV;
+$dstdir = shift @ARGV;
+opendir DIR, $srcdir or die($!);
+@file = readdir(DIR);
+closedir DIR;
+
+map{
+  if(/\.java$/ && !-e "$dstdir/$_"){
+    print "$dstdir/$_ not exist\n";
+  }
+}@file;
+
+__END__
+open F, ">UDF_$class.java" or die($!);
+
+print F<<_T_
+/*
+*/
+package jp.ne.heart.udfv.$pkg;
+
+import java.io.*;
+import java.util.*;
+import org.w3c.dom.*;
+import org.apache.xerces.parsers.*;
+import org.apache.xerces.dom.*;
+import jp.ne.heart.udfv.*;
+import jp.ne.heart.udfv.ecma167.*;
+import jp.ne.heart.udfv.$ref.*;
+
+public class UDF_$class extends jp.ne.heart.udfv.$ref.UDF_$class
+{
+/**
+\@param elem	¿Æ
+\@param name	Ì¾Á°
+*/
+  public UDF_$class(UDF_ElementBase elem, String prefix, String name){
+     super(elem, prefix, name == null ? "UDF_$class" : name);
+  }
+}
+_T_

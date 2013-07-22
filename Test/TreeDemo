@@ -1,0 +1,5 @@
+#!/bin/sh
+
+CLASSPATH=./build:lib/xerces.jar:lib/xml-apis.jar:lib/xmlParserAPIs.jar
+
+java -Xmx512m -cp $CLASSPATH com.udfv.gui.TreeDemo $@ 

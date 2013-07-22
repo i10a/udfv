@@ -1,0 +1,29 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>パーティション副番号</title>
+  </head>
+
+  <body>
+    <h1>パーティション副番号</h1>
+
+Virtual Partition Map / Metadata Partitoin Mapにのみ有効である。
+
+Virtual Partition Mapでは、何代前のデータかを意味する。
+0が最新のデータ、1が一代前のデータ、-1が(追記した場合の)カレントの番号である。
+
+Metadata Partition Mapでは、Mirrorか否かを意味する。
+0がMain(not Mirror)、1がMirrorである。
+
+互換性
+
+過去のバージョンでは Metadata Partition MapのMirrorを表わすには、
+mirror="yes"と属性に書いていた。
+
+過去のXMLとの互換性を残すため、mirror="yes"は subno="1"と同義であるとし、
+今後生成するXMLでも MetadataPartMapでは subno="1"は用いず、
+mirror="yes"を用いる。
+
+    <hr>
+  </body>
+</html>

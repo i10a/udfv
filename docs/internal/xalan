@@ -1,0 +1,4 @@
+#!/bin/sh
+
+#java org.apache.xalan.xslt.Process -IN $1 -XSL DOC.xsl -OUT README.html
+java org.apache.xalan.xslt.Process -IN $1 -XSL DOC.xsl

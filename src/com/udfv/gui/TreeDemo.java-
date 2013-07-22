@@ -1,0 +1,1815 @@
+package com.udfv.gui;
+
+/**
+ * A 1.4 application that requires the following additional files:
+ *   TreeDemoHelp.html
+ *    arnold.html
+ *    bloch.html
+ *    chan.html
+ *    jls.html
+ *    swingtutorial.html
+ *    tutorial.html
+ *    tutorialcont.html
+ *    vm.html
+ */
+//import javax.swing.JEditorPane;
+import javax.swing.JTextArea;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.UIManager;
+
+import javax.swing.JTree;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreeSelectionModel;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.JMenuBar;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+
+import java.awt.FileDialog;
+import java.io.File;
+
+import java.net.URL;
+import java.io.IOException;
+import java.awt.Dimension;
+import java.awt.GridLayout;
+
+import com.udfv.access.*;
+import com.udfv.exception.*;
+import com.udfv.core.*;
+import com.udfv.util.*;
+
+import com.udfv.udf250.UDF_icbtag;
+
+
+public class TreeDemo extends JPanel
+    implements TreeSelectionListener,ActionListener {
+
+    public JFrame parent;
+
+    private JSplitPane ssPane;
+    private JSplitPane splitPane;
+    private JTextArea text;
+    private dynaJTree tree;
+
+    private static boolean DEBUG = false;
+    private JMenuBar menuBar;
+    private JMenu menu;
+    private JMenuItem menuItem;
+
+    UDF_Image image;
+
+    //Optionally play with line styles.  Possible values are
+    //"Angled" (the default), "Horizontal", and "None".
+    private static boolean playWithLineStyle = false;
+    private static String lineStyle = "Horizontal";
+
+    //Optionally set the look and feel.
+    private static boolean useSystemLookAndFeel = false;
+
+    /*　イベント制御フラグ　*/
+    public String event_type;
+    public boolean event;
+    public boolean flag_exit;
+    public boolean flag_bitmap;
+    private boolean flag_desc264;
+    private int scale;
+
+    public javax.swing.ImageIcon treeIcon;
+
+    /**
+      コンストラクタ
+    */
+    public TreeDemo() {
+        super(new GridLayout(1,0));
+        //Create the nodes.
+
+        flag_exit = false;
+        flag_bitmap = false;
+        flag_desc264 = true;
+        event_type = null;
+        event = false;
+        scale = 16;
+
+//        treeIcon = new javax.swing.ImageIcon(getClass().getResource("/com/udfv/gui/gray.gif"));
+        treeIcon = null;
+
+        dynaMutableTreeNode top = new dynaMutableTreeNode("UDF");
+        tree = new dynaJTree(top);
+        tree.getSelectionModel().setSelectionMode
+                (TreeSelectionModel.SINGLE_TREE_SELECTION);
+
+        //Listen for when the selection changes.
+        tree.addTreeSelectionListener(this);
+
+	/*
+	actionPerformed(null);
+
+        //Create a tree that allows one selection at a time.
+	*/
+
+        if (playWithLineStyle) {
+            System.out.println("line style = " + lineStyle);
+            tree.putClientProperty("JTree.lineStyle", lineStyle);
+        }
+
+        //Create the scroll pane and add the tree to it.
+        JScrollPane treeView = new JScrollPane(tree);
+
+        //Create the scroll pane and the text area to it.
+        text = new JTextArea();
+        JScrollPane textView = new JScrollPane(text);
+
+        //Add the scroll panes to a split pane.
+        splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        splitPane.setTopComponent(treeView);
+        splitPane.setBottomComponent(textView);
+
+        //Set mimimum size.
+        Dimension minimumSize = new Dimension(200, 50);
+        textView.setMinimumSize(minimumSize);
+        treeView.setMinimumSize(minimumSize);
+        splitPane.setDividerLocation(200); //XXX: ignored in some releases
+                                           //of Swing. bug 4101306
+        //workaround for bug 4101306:
+        //treeView.setPreferredSize(new Dimension(200, 100));
+
+        splitPane.setPreferredSize(new Dimension(500, 300));
+
+        JPanel bitmap_pane = new JPanel();
+        bitmap_pane.setBackground(java.awt.Color.white);
+
+        Dimension dm = new Dimension(500, 72);
+        bitmap_pane.setSize(dm);
+        bitmap_pane.setPreferredSize(dm);
+
+
+        ssPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        ssPane.setTopComponent(splitPane);
+        ssPane.setBottomComponent(bitmap_pane);
+
+//        ssPane.setPreferredSize(new Dimension(500, 332));
+
+        //Add the split pane to this panel.
+//        add(splitPane);
+        add(ssPane);
+
+        //　標準エラー出力を全てウィンドウに取り込む（再設計予定）　//
+        try {
+            java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+
+//            System.setErr(new PrintJTextAreaStream(bo, true, "UTF-8"));
+            System.setOut(new PrintJTextAreaStream(bo, true, "UTF-8"));
+        }
+        catch(java.lang.SecurityException e) {
+            System.out.println(e.toString());
+            System.exit(1);
+        }
+        catch(java.io.UnsupportedEncodingException e) {
+            System.out.println(e.toString());
+            System.exit(1);
+        }
+
+    }
+
+
+    /**
+      テキスト入力用ダイアログ
+    */
+    class JTextInputDialog extends javax.swing.JDialog implements ActionListener {
+
+        javax.swing.JTextField text;
+        javax.swing.JButton apply;
+        javax.swing.JButton cancel;
+
+        public JTextInputDialog(javax.swing.JFrame owner, String title) {
+            this(owner, title, "");
+        }
+
+        public JTextInputDialog(javax.swing.JFrame owner, String title, long value) {
+            this(owner, title, java.lang.String.valueOf(value));
+        }
+
+        public JTextInputDialog(javax.swing.JFrame owner, String title, String number) {
+            super(owner, title, true);
+
+            text = new javax.swing.JTextField(number, 32);
+
+            javax.swing.JButton apply = new javax.swing.JButton("apply");
+            javax.swing.JButton cancel  = new javax.swing.JButton("cancel");
+            apply.setVerticalTextPosition(javax.swing.AbstractButton.CENTER);
+            apply.setHorizontalTextPosition(javax.swing.AbstractButton.LEADING);
+            apply.setActionCommand("apply");
+            apply.setToolTipText("左様");
+
+            cancel.setVerticalTextPosition(javax.swing.AbstractButton.CENTER);
+            cancel.setHorizontalTextPosition(javax.swing.AbstractButton.LEADING);
+            cancel.setActionCommand("cancel");
+            cancel.setToolTipText("否");
+
+            apply.addActionListener(this);
+            cancel.addActionListener(this);
+
+            java.awt.GridBagLayout layout = new java.awt.GridBagLayout();
+            javax.swing.JPanel panel = new javax.swing.JPanel(layout);
+
+            java.awt.GridBagConstraints gbc = new java.awt.GridBagConstraints();
+
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.gridwidth  = 2;
+            gbc.gridheight = 1;
+            panel.add(text, gbc);
+
+            gbc.gridx = 0;
+            gbc.gridy = 1;
+            gbc.gridwidth  = 1;
+            gbc.gridheight = 1;
+            gbc.weightx = 0.5;
+            panel.add(apply, gbc);
+
+            gbc.gridx = 1;
+            gbc.gridy = 1;
+            gbc.gridwidth  = 1;
+            gbc.gridheight = 1;
+            gbc.weightx = 0.5;
+            panel.add(cancel, gbc);
+
+            setContentPane(panel);
+            pack();
+
+            //Ensure the text field always gets the first focus.
+            addComponentListener(new java.awt.event.ComponentAdapter() {
+                public void componentShown(java.awt.event.ComponentEvent ce) {
+                    text.requestFocusInWindow();
+                }
+            });
+        }
+
+        public void setVisible(boolean aFlag) {
+            super.setVisible(aFlag);
+        }
+
+        public void actionPerformed(ActionEvent ev) {
+            String action = ev.getActionCommand();
+            if (action.equals("apply")) {
+                setVisible(false);
+                return;
+            }
+            if (action.equals("cancel")) {
+                text.setText(null);
+                setVisible(false);
+                return;
+            }
+        }
+
+        public String getText( ) {
+            return text.getText();
+        }
+    }
+
+
+    public void valueChanged(TreeSelectionEvent e) {
+
+        if (event) {
+            return;
+        }
+
+        dynaMutableTreeNode node = (dynaMutableTreeNode)
+	    tree.getLastSelectedPathComponent();
+
+        if (node == null) return;
+
+        Object nodeInfo = node.getUserObject();
+        if (!node.isLeaf()) {
+            return;
+        }
+        if (nodeInfo.toString().equals("UDF")) {
+            return;
+        }
+
+        java.awt.Point pos = new java.awt.Point(parent.getX() + 32, parent.getY() + 32);
+
+        //　ここが選択時の処理　//
+
+        UDF_ElementBase elem = (UDF_ElementBase)nodeInfo;
+//        System.out.println(elem.getNode().getNodeName());
+        String param = elem.getClass().getName() + " : " + nodeInfo.toString();
+        String className = elem.getClass().getName();
+        int idx = className.lastIndexOf(new String(".").charAt(0));
+        String base = ( idx < 0 ) ? "": className.substring(idx + 1);
+
+        if (base.equals("UDF_uint64")) {
+
+            com.udfv.ecma167.UDF_uint64 u64 = (com.udfv.ecma167.UDF_uint64)elem;
+            param += " : " + u64.getLongValue();
+
+            JTextInputDialog input = new JTextInputDialog(parent, param, u64.getLongValue());
+            input.setLocation(pos);
+            input.setVisible(true);
+
+            String text = input.getText();
+            if (text.equals("")) {
+                input.dispose();
+                input = null;
+                return;
+            }
+            try {
+                long val = Long.parseLong(text);
+                u64.setValue(val);
+            }
+            catch(java.lang.NumberFormatException ee) {
+                System.err.println(ee.toString());
+            }
+            input.dispose();
+            input = null;
+        }
+        else
+        if (base.equals("UDF_uint32")) {
+
+            com.udfv.ecma167.UDF_uint32 u32 = (com.udfv.ecma167.UDF_uint32)elem;
+            param += " : " + u32.getLongValue();
+
+            JTextInputDialog input = new JTextInputDialog(parent, param, u32.getLongValue());
+            input.setLocation(pos);
+            input.setVisible(true);
+
+            String text = input.getText();
+            if (text.equals("")) {
+                input.dispose();
+                input = null;
+                return;
+            }
+            try {
+                long val = Long.parseLong(text);
+                u32.setValue(val);
+            }
+            catch(java.lang.NumberFormatException ee) {
+                System.err.println(ee.toString());
+            }
+            input.dispose();
+            input = null;
+        }
+        else
+        if (base.equals("UDF_uint32a")) {
+
+            com.udfv.ecma167.UDF_uint32a u32a = (com.udfv.ecma167.UDF_uint32a)elem;
+            param += " : " + u32a.getLongValue();
+
+            JTextInputDialog input = new JTextInputDialog(parent, param, u32a.getLongValue());
+            input.setLocation(pos);
+            input.setVisible(true);
+
+            String text = input.getText();
+            if (text.equals("")) {
+                input.dispose();
+                input = null;
+                return;
+            }
+            try {
+                long val = Long.parseLong(text);
+                u32a.setValue(val);
+            }
+            catch(java.lang.NumberFormatException ee) {
+                System.err.println(ee.toString());
+            }
+            input.dispose();
+            input = null;
+        }
+        else
+        if (base.equals("UDF_uint16")) {
+
+            com.udfv.ecma167.UDF_uint16 u16 = (com.udfv.ecma167.UDF_uint16)elem;
+            param += " : " + u16.getIntValue();
+
+            JTextInputDialog input = new JTextInputDialog(parent, param, u16.getLongValue());
+            input.setLocation(pos);
+            input.setVisible(true);
+
+            String text = input.getText();
+            if (text.equals("")) {
+                input.dispose();
+                input = null;
+                return;
+            }
+            try {
+                int val = Integer.parseInt(text);
+                u16.setValue(val);
+            }
+            catch(java.lang.NumberFormatException ee) {
+                System.err.println(ee.toString());
+            }
+            input.dispose();
+            input = null;
+        }
+        else
+        if (base.equals("UDF_uint8")) {
+
+            com.udfv.ecma167.UDF_uint8 u8 = (com.udfv.ecma167.UDF_uint8)elem;
+            param += " : " + u8.getIntValue();
+
+            JTextInputDialog input = new JTextInputDialog(parent, param, u8.getLongValue());
+            input.setLocation(pos);
+            input.setVisible(true);
+
+            String text = input.getText();
+            if (text.equals("")) {
+                input.dispose();
+                input = null;
+                return;
+            }
+            try {
+                int val = Integer.parseInt(text);
+                u8.setValue(val);
+            }
+            catch(java.lang.NumberFormatException ee) {
+                System.err.println(ee.toString());
+            }
+            input.dispose();
+            input = null;
+        }
+        else
+        if (base.equals("UDF_bytes") || base.equals("UDF_dstring") || base.equals("UDF_pad")) {
+
+            com.udfv.ecma167.UDF_bytes ub = (com.udfv.ecma167.UDF_bytes)elem;
+            com.udfv.encoding.UDF_Encoding enc = ub.getEncoding();
+            byte [] b = ub.getData();
+            int size = ub.getSize();
+
+            String pre = (enc != null) ? ub.getEncoding().toString(b): UDF_Util.b2qstr(b);
+            JTextInputDialog input = new JTextInputDialog(parent, param, pre);
+            input.setLocation(pos);
+            input.setVisible(true);
+
+            String text = input.getText();
+            if (text.equals("")) {
+                input.dispose();
+                input = null;
+                return;
+            }
+            try {
+                byte [] sb = (enc != null) ? ub.getEncoding().toBytes(text, size): UDF_Util.qstr2b(text, size);
+                ub.setData(sb);
+            }
+            catch(com.udfv.exception.UDF_Exception ee) {
+                javax.swing.JOptionPane.showMessageDialog(this, ee.toString(), "error", javax.swing.JOptionPane.WARNING_MESSAGE);
+            }
+            input.dispose();
+            input = null;
+        }
+        else {
+            System.out.println(nodeInfo.toString() + " : " + param);
+            ((UDF_ElementBase)nodeInfo).debug(0);
+        }
+
+    }
+
+    /*
+
+    public void valueChanged(TreeSelectionEvent e) {
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode)
+                           tree.getLastSelectedPathComponent();
+
+        if (node == null) return;
+
+        Object nodeInfo = node.getUserObject();
+        if (node.isLeaf()) {
+            BookInfo book = (BookInfo)nodeInfo;
+            displayURL(book.bookURL);
+            if (DEBUG) {
+                System.out.print(book.bookURL + ":  \n    ");
+            }
+        } else {
+            displayURL(helpURL);
+        }
+        if (DEBUG) {
+            System.out.println(nodeInfo.toString());
+        }
+    }
+    */
+    /*
+    private class BookInfo {
+        public String bookName;
+        public URL bookURL;
+
+        public BookInfo(String book, String filename) {
+            bookName = book;
+            bookURL = TreeDemo.class.getResource(filename);
+            if (bookURL == null) {
+                System.err.println("Couldn't find file: "
+                                   + filename);
+            }
+        }
+
+        public String toString() {
+            return bookName;
+        }
+    }
+    */
+    /*
+    private void initHelp() {
+        String s = "TreeDemoHelp.html";
+        helpURL = TreeDemo.class.getResource(s);
+        if (helpURL == null) {
+            System.err.println("Couldn't open help file: " + s);
+        } else if (DEBUG) {
+            System.out.println("Help URL is " + helpURL);
+        }
+
+        displayURL(helpURL);
+    }
+
+    private void displayURL(URL url) {
+        try {
+            if (url != null) {
+                text.setPage(url);
+            } else { //null url
+		text.setText("File Not Found");
+                if (DEBUG) {
+                    System.out.println("Attempted to display a null URL.");
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Attempted to read a bad URL: " + url);
+        }
+    }
+    */
+
+    /**
+      レンダラを dynaTreeCellRenderer に変更した JTree。
+    */
+    class dynaJTree extends JTree {
+
+        public dynaJTree(javax.swing.tree.TreeNode top) {
+            super(top);
+            setCellRenderer(new dynaTreeCellRenderer());
+        }
+    }
+
+    /**
+      使用するアイコンの種類を区別するためにタイプを付け足したDefaultMutableTreeNode。
+    */
+    class dynaMutableTreeNode extends DefaultMutableTreeNode {
+
+        /*　タイプ　*/
+        private int type;
+
+        public dynaMutableTreeNode(Object userObject) {
+            this(userObject, 0);
+        }
+        public dynaMutableTreeNode(Object userObject, int type) {
+            super(userObject);
+            this.type = type;
+        }
+
+        /**
+          タイプ取得
+        */
+        public int getType( ) {
+            return type;
+        }
+        /**
+          タイプ設定
+        */
+        public void setType(int next) {
+            type = next;
+        }
+
+    }
+
+    /**
+      アイコンを書き分けるためのレンダラ
+    */
+    class dynaTreeCellRenderer extends javax.swing.tree.DefaultTreeCellRenderer {
+
+        public java.awt.Component getTreeCellRendererComponent(
+            JTree tree,
+            Object value,
+            boolean selected,
+            boolean expanded,
+            boolean leaf,
+            int row,
+            boolean hasFocus
+        ) {
+
+            //　DefaultTreeCellRenderer が使用するRenderer Componentを取得します　//
+            java.awt.Component c = super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
+
+            //　TreeNodeは全てdynaMutableTreeNode である前提で、タイプを取得します　//
+            dynaMutableTreeNode n = (dynaMutableTreeNode)value;
+
+            //　タイプが０のときはデフォルトのままに　//
+            if (n.getType() == 0) {
+                return c;
+            }
+
+            //　それ以外のときはグレーのアイコンを設定する　//
+            ((javax.swing.JLabel)c).setIcon(treeIcon);
+
+            //　レンダラとして cを返す　//
+            return c;
+        }
+    }
+
+    private void createNodes(UDF_ElementBase e, dynaMutableTreeNode parent) {
+        createNodes(e, parent, true);
+    }
+
+    private void createNodes(UDF_ElementBase e, dynaMutableTreeNode parent, boolean reEntry) {
+	UDF_ElementBase el[] = e.getChildren();
+	for(int i=0 ; i<el.length ; ++i){
+	    dynaMutableTreeNode c = new dynaMutableTreeNode(el[i].getName());
+	    parent.add(c);
+	    c.setUserObject(el[i]);
+	    if (reEntry) {
+		createNodes(el[i], c);
+	    }
+	}
+    }
+
+    /**
+      ファイルのディレクトリツリーを作成する。
+    */
+    private void createDirectoryTree(com.udfv.core.UDF_ElementList directory, dynaMutableTreeNode parent) {
+
+        if (directory == null) {
+            return;
+        }
+
+        for (int i = 1, max = directory.size(); i < max; i++) {
+
+            //　File Identifier Descriptorを読み出します　//
+            UDF_ElementBase elem = directory.elementAt(i);
+            String name = elem.toString();
+            if (!name.equals("UDF_desc257")) {
+                continue;
+            }
+
+            //　このFile Identifier Descriptorから参照されるFile Entry(Extended File Entry) を取得します　//
+            com.udfv.ecma167.UDF_desc257 fid = (com.udfv.ecma167.UDF_desc257) elem;
+            com.udfv.ecma167.UDF_FEDesc fe = fid.getReferenceTo();
+            if (fe == null) {
+                break;
+            }
+
+            //　File Identifier からファイル名を取り出してTreeNodeを作成します　//
+            name = fid.getFileId().getStringData();
+            int idx = 1 + name.indexOf(":");
+            name = name.substring(idx);
+            dynaMutableTreeNode n    = new dynaMutableTreeNode(name);
+
+            //　ファイルを構成するFile IdentiferとFile EntryのTreeNodeを作成します　//
+            dynaMutableTreeNode n257 = new dynaMutableTreeNode(elem, 1);
+            dynaMutableTreeNode n26x = new dynaMutableTreeNode(fe, 1);
+
+            //　ディレクトリツリーに追加します　//
+            parent.add(n);
+            n.add(n257);
+            createNodes(fid, n257);
+            n.add(n26x);
+            createNodes(fe, n26x);
+
+            //　childrenが存在するときは、そのディレクトリツリーを作成して、ここに追加します　//
+            createDirectoryTree(fe.getDirectoryList(), n);
+
+            //　ファイルであったときはUDF_DataをTreeNodeにして追加します　//
+            int type = fe.getICBFileType();
+            int flag = fe.getICBFlags() & 0x7;
+            if (type == UDF_icbtag.T_FILE || type == UDF_icbtag.T_RTFILE) {
+                if (fe.getAllocDesc().getSize() < 8) {
+                }
+                else
+                if (flag == UDF_icbtag.SHORT_AD || flag == UDF_icbtag.LONG_AD) {
+
+                    //　先頭のADからUDF_Dataのextentを推測します　//
+                    com.udfv.ecma167.UDF_bytes b = fe.getAllocDesc();
+                    UDF_RandomAccessBytes rab = b.genRandomAccessBytes();
+
+                    int partno, lbn;
+
+                    try {
+                        if (flag == UDF_icbtag.LONG_AD) {
+                            com.udfv.ecma167.UDF_long_ad ad = new com.udfv.ecma167.UDF_long_ad(b, null, null);
+                            ad.readFrom(rab);
+                            partno = ad.getPartRefNo();
+                            lbn    = ad.getLbn();
+                        }
+                        else {
+                            com.udfv.ecma167.UDF_short_ad ad = new com.udfv.ecma167.UDF_short_ad(b, null, null);
+                            ad.readFrom(rab);
+                            partno = rab.getPartRefNo();
+                            lbn    = ad.getLbn();
+                        }
+                    }
+                    catch(com.udfv.exception.UDF_Exception e) {
+                        image.debugMsg(0, e.toString());
+                        continue;
+                    }
+                    catch(java.io.IOException e) {
+                        image.debugMsg(0, e.toString());
+                        continue;
+                    }
+
+                    //　/udfに存在する全てのUDF_Extentを検索し、UDF_Dataが存在するか確認します　//
+                    for (int jdx = 0; ; jdx++) {
+                        com.udfv.core.UDF_ElementBase eb = image.env.root.findByXPATH("UDF_Extent[" + jdx + "]");
+                        if (eb == null) {
+                            break;
+                        }
+                        com.udfv.core.UDF_Extent extent = (com.udfv.core.UDF_Extent)eb;
+                        com.udfv.core.UDF_ElementBase data = extent.findByXPATH("UDF_Data");
+                        if (data == null) {
+                            continue;
+                        }
+                        if (!data.getName().equals("UDF_Data")) {
+                            continue;
+                        }
+                        com.udfv.core.UDF_ExtentElem [] ex_elem = extent.getExtent();
+                        if (ex_elem.length < 1) {
+                            continue;
+                        }
+                        if (ex_elem[0].loc != lbn || ex_elem[0].partno != partno) {
+                            continue;
+                        }
+
+//System.out.println("==== find   partno : " + ex_elem[0].partno + ", lbn = " + ex_elem[0].loc);
+                        //　発見したらTreeNodeを作成して追加　//
+                        dynaMutableTreeNode ndata = new dynaMutableTreeNode(data, 1);
+                        n.add(ndata);
+                        break;
+                    }
+                }
+                else {
+                }
+            }
+        }
+    }
+
+
+
+
+    public void createMenuBar(JFrame frame){
+
+	/*　メニューバーの作成　*/
+	menuBar = new JMenuBar();
+
+
+
+	/*　"Media" メニューの作成　*/
+	menu = new JMenu("Media");
+
+	/*　メディアから直接読み込むメニュー項目を作成　*/
+	JMenuItem menuItemMedia = new JMenuItem("Open Media");
+	menu.add(menuItemMedia);
+	menuItemMedia.addActionListener(this);
+
+	/*　 udfイメージファイルを読み込むメニュー項目を作成　*/
+	menuItem = new JMenuItem("Open Image File ...");
+	menu.add(menuItem);
+	menuItem.addActionListener(this);
+
+	/*　 udfイメージファイルを書き出すメニュー項目を作成　*/
+	JMenuItem menuItemSave = new JMenuItem("Save Image File ...");
+	menu.add(menuItemSave);
+	menuItemSave.addActionListener(this);
+
+        /*　セパレータ追加　*/
+        menu.add(new javax.swing.JSeparator());
+
+        /*　"Exit"メニュー項目を作成　*/
+        JMenuItem menuItemExit = new JMenuItem("Exit");
+	menu.add(menuItemExit);
+	menuItemExit.addActionListener(this);
+
+	/*　メニューバーに登録　*/
+	menuBar.add(menu);
+
+
+
+
+	/*　"UDF" メニューの作成　*/
+	JMenu menuUDF = new JMenu("UDF");
+
+	/*　UDF Element のツリーを出力するメニューを作成　*/
+	JMenuItem menuItemVerify = new JMenuItem("Verify");
+	menuUDF.add(menuItemVerify);
+	menuItemVerify.addActionListener(this);
+
+	/*　"XML" を読み込むメニューを作成　*/
+	JMenuItem menuItemRecalc = new JMenuItem("Re-Calculation");
+	menuUDF.add(menuItemRecalc);
+	menuItemRecalc.addActionListener(this);
+
+	/*　メニューバーに登録　*/
+	menuBar.add(menuUDF);
+
+
+
+	/*　"XML" メニューの作成　*/
+	JMenu menuXml = new JMenu("Xml");
+
+	/*　"XML" を出力するメニューを作成　*/
+	JMenuItem menuItemOutputXml = new JMenuItem("Save Xml ...");
+	menuXml.add(menuItemOutputXml);
+	menuItemOutputXml.addActionListener(this);
+
+	/*　"XML" を読み込むメニューを作成　*/
+	JMenuItem menuItemInputXml = new JMenuItem("Open Xml ...");
+	menuXml.add(menuItemInputXml);
+	menuItemInputXml.addActionListener(this);
+
+	/*　メニューバーに登録　*/
+	menuBar.add(menuXml);
+
+
+
+	/*　"Tree"メニューの作成　*/
+	JMenu menuTree = new JMenu("Tree");
+
+	/*　UDF Element のツリーを出力するメニューを作成　*/
+	JMenuItem menuItemViewUdfElement = new JMenuItem("View UDF Element");
+	menuTree.add(menuItemViewUdfElement);
+	menuItemViewUdfElement.addActionListener(this);
+
+	/*　ディレクトリツリーを表示するメニューを作成　*/
+	JMenuItem menuItemViewDirectory = new JMenuItem("View Directory");
+	menuTree.add(menuItemViewDirectory);
+	menuItemViewDirectory.addActionListener(this);
+
+	/*　メニューバーに登録　*/
+	menuBar.add(menuTree);
+
+
+
+	/*　"Space Bitmap"メニューの作成　*/
+	JMenu menuSpaceBitmap = new JMenu("Space Bitmap");
+
+	/*　Space Bitmap Descriptor の内容を表示する（あれば）メニューを作成　*/
+	JMenuItem menuItemView = new JMenuItem("View desc264");
+	menuSpaceBitmap.add(menuItemView);
+	menuItemView.addActionListener(this);
+
+	/*　各UDF descriptorの情報からビットマップを作成するメニューを作成　*/
+	JMenuItem menuItemCreate = new JMenuItem("Create bitmap");
+	menuSpaceBitmap.add(menuItemCreate);
+	menuItemCreate.addActionListener(this);
+
+        /*　セパレータ追加　*/
+        menuSpaceBitmap.add(new javax.swing.JSeparator());
+
+	/*　Bitmap表示の倍率設定(1/16)　*/
+	JMenuItem menuItem16x = new JMenuItem("x 16");
+	menuSpaceBitmap.add(menuItem16x);
+	menuItem16x.addActionListener(this);
+
+	/*　Bitmap表示の倍率設定(1/2048)　*/
+	JMenuItem menuItem2048x = new JMenuItem("x 2048");
+	menuSpaceBitmap.add(menuItem2048x);
+	menuItem2048x.addActionListener(this);
+
+	/*　メニューバーに登録　*/
+	menuBar.add(menuSpaceBitmap);
+
+
+
+
+
+
+	/*　メニューバーの登録　*/
+	frame.setJMenuBar(menuBar);
+    }
+
+    //　一時停止　//
+    public static void sleep( long msec ) {
+        try {
+            //　処理待ち　//
+            java.lang.Thread.currentThread().sleep( msec );
+        }
+        catch ( InterruptedException e ) {
+            System.err.println(e.toString());
+        }
+    }
+
+    public String getFile( ) {
+        return getFile(true);
+    }
+
+    public String getFile(boolean exists) {
+
+        String dfile     = null;
+        String directory = null;
+
+        //　データファイルが存在しなかったときダイアログを　//
+        FileDialog fdialog = new FileDialog(parent, "UDF Image File");
+
+        while (true) {
+            //　ダイアログ出力　//
+            fdialog.show();
+            dfile = fdialog.getFile();
+            if (dfile == null) {
+                return null;
+            }
+            directory = fdialog.getDirectory();
+            dfile = directory + dfile;
+
+            //　ファイルの有無が関係ないとき　//
+            if (!exists) {
+                break;
+            }
+
+            File dbin = new File(dfile);
+
+            //　ファイルが存在していたら成功　//
+            if (dbin.exists()) {
+                break;
+            }
+        }
+
+        return dfile;
+    }
+
+
+    /**
+      標準エラー出力をフックするためのクラス。
+      書き込みがあるたびにtextにappend()を行う。
+    */
+    class PrintJTextAreaStream extends java.io.PrintStream {
+
+        java.io.ByteArrayOutputStream bo;
+
+        public PrintJTextAreaStream(java.io.ByteArrayOutputStream out, boolean autoFlush, String enc) throws java.io.UnsupportedEncodingException {
+            super(out, autoFlush, enc);
+            bo = out;
+        }
+
+        public void write(byte [] buf, int off, int len) {
+
+            super.write(buf, off, len);
+            try {
+System.err.print(bo.toString("UTF-8"));
+                text.append(bo.toString("UTF-8"));
+                bo.reset();
+
+                text.setCaretPosition(text.getText().length());
+            }
+            catch(java.io.UnsupportedEncodingException e) {
+                System.exit(1);
+            }
+
+        }
+    }
+
+    /**
+      Space Bitmap表示クラス
+    */
+    class JBitmapImage extends JPanel {
+
+        java.awt.Color color;
+        byte [] bitmap;
+        int len;
+        int height;
+
+        int scale;
+
+        public JBitmapImage(byte [] bitmap, int len, java.awt.Color color) {
+            super();
+
+            this.color = color;
+            this.bitmap = bitmap;
+            this.len = len;
+            this.height = 56;
+            this.scale = 16;
+            packSize();
+        }
+
+        public void setScale(int scale) {
+            this.scale = scale;
+        }
+
+        public void packSize( ) {
+            int w = adjustWidth(len / scale);
+            int h = this.height;
+            Dimension dm = new Dimension(w, h);
+            setSize(w, h);
+            setMaximumSize(dm);
+            setMinimumSize(dm);
+            setPreferredSize(dm);
+        }
+
+        private int adjustWidth(int w) {
+            return w;
+//            return (w > 2048) ? 2048: w;
+        }
+
+        public boolean is(int id) {
+            if (id < 0 || len < id) {
+                return false;
+            }
+            return (0 != (bitmap[id/8] & (1<<(id % 8))));
+        }
+
+        public void paint(java.awt.Graphics gr) {
+            super.paint(gr);
+
+            int w = adjustWidth(len / scale);
+            int h = height;
+
+            gr.setColor(java.awt.Color.white);
+            gr.fillRect(0, 0, w, h);
+
+            for (int i = 0; i < len; ) {
+
+                int start = i;
+                if (is(i++)) {
+                    continue;
+                }
+                for (; i < len; i++) {
+                    if (is(i)) {
+                        break;
+                    }
+                }
+
+                int x1 = (int)((double)w * (double)start / (double)len);
+                int x2 = (int)((double)w * (double)i / (double)len);
+
+                gr.setColor(color);
+                if (x1 == x2) {
+                    gr.drawLine(x1, 0, x2, h - 1);
+                }
+                else {
+                    gr.fillRect(x1, 0, x2, h);
+                }
+            }
+        }
+    } // class
+
+    /*
+      Space Bitmapを描画します。
+    */
+    public void drawBitmap() {
+
+if (true) {
+/*
+  com.udfv.ecma167.UDF_bitmap bm = null;
+  try {
+      bm = image.env.getPartMapBitmap(0);
+      bm.unset(0, bm.getBitSize());
+  }
+  catch(com.udfv.exception.UDF_Exception e) {
+      //
+  }
+*/
+
+  System.err.println("####");
+  com.udfv.udfapi.UDF_AllocPolicyImpl               manager1 = new com.udfv.udfapi.UDF_AllocPolicyImpl();
+  com.udfv.udfapi.UDF_AllocPolicyBackward           manager2 = new com.udfv.udfapi.UDF_AllocPolicyBackward();
+  com.udfv.udfapi.UDF_AllocPolicyContinuous         manager3 = new com.udfv.udfapi.UDF_AllocPolicyContinuous();
+  com.udfv.udfapi.UDF_AllocPolicyContinuousBackward manager4 = new com.udfv.udfapi.UDF_AllocPolicyContinuousBackward();
+
+//  bm.debug(2);
+
+  UDF_AD [] ads = null;
+  try {
+      manager1.setDefaultLbn(500000);
+      manager1.setDefaultLbn(1000000);
+      ads = manager1.alloc2(image, 1024, 1).toADArray();
+      manager1.setDefaultLbn(1500000);
+      ads = manager1.alloc2(image, 1024, 1).toADArray();
+
+      manager1.setDefaultLbn(2236000);
+      ads = manager1.alloc2(image, 1024, 1).toADArray();
+      manager1.setDefaultLbn(2235000);
+      ads = manager1.alloc2(image, 1024, 1).toADArray();
+      manager1.setDefaultLbn(2234000);
+      ads = manager1.alloc2(image, 1024, 1).toADArray();
+      manager1.setDefaultLbn(2233000);
+      ads = manager1.alloc2(image, 1024, 1).toADArray();
+  }
+  catch(UDF_Exception e) {
+      e.printStackTrace();
+  }
+  catch(IOException e) {
+      e.printStackTrace();
+  }
+
+//  bm.debug(2);
+
+  System.err.println("####");
+  try {
+      ads = manager2.alloc(image, 1024 * 1024, 2);
+  }
+  catch(UDF_Exception e) {
+      e.printStackTrace();
+  }
+  catch(IOException e) {
+      e.printStackTrace();
+  }
+
+  System.err.println("####");
+  for (int i = 0, max = ads.length; i < max; i++) {
+      System.err.println("refno = " + ads[i].getPartRefNo() + ", lbn = " + ads[i].getLbn() + ", len = " + (ads[i].getLen() / 2048));
+  }
+
+  try {
+      ads = manager3.alloc(image, 1024 * 1024, 2);
+  }
+  catch(UDF_Exception e) {
+      e.printStackTrace();
+  }
+  catch(IOException e) {
+      e.printStackTrace();
+  }
+
+  System.err.println("####");
+  for (int i = 0, max = ads.length; i < max; i++) {
+      System.err.println("refno = " + ads[i].getPartRefNo() + ", lbn = " + ads[i].getLbn() + ", len = " + (ads[i].getLen() / 2048));
+  }
+
+  try {
+      ads = manager4.alloc(image, 1024 * 1024, 2);
+  }
+  catch(UDF_Exception e) {
+      e.printStackTrace();
+  }
+  catch(IOException e) {
+      e.printStackTrace();
+  }
+
+  System.err.println("####");
+  for (int i = 0, max = ads.length; i < max; i++) {
+      System.err.println("refno = " + ads[i].getPartRefNo() + ", lbn = " + ads[i].getLbn() + ", len = " + (ads[i].getLen() / 2048));
+  }
+
+  try {
+      image.env.getPartMapBitmap(0).debug(2);
+  }
+  catch(com.udfv.exception.UDF_VolException e) {
+      //
+  }
+}
+
+
+  JFrame jf = new JFrame();
+/*
+  jf.getContentPane().add(image.createJBitmapPanel(640, 64));
+  jf.pack();
+  jf.setResizable(false);
+  jf.show();
+
+  jf = new JFrame();
+  jf.getContentPane().add(image.createJBitmapPanel(1024, 64));
+  jf.pack();
+  jf.setResizable(false);
+  jf.show();
+
+*/
+  JPanel jp = new JPanel();
+  jp.setPreferredSize(new java.awt.Dimension(640, 64));
+  jf = new JFrame();
+  jf.getContentPane().add(jp);
+  jf.pack();
+  jf.show();
+  int height = jf.getHeight() + 18;
+  jf.hide();
+
+  jf = new JFrame();
+  JScrollPane js = new JScrollPane(image.createJBitmapPanel(4096, 64));
+  js.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+  jf.getContentPane().add(js);
+  jf.setSize(new java.awt.Dimension(640, height));
+  jf.show();
+  jf.setResizable(false);
+
+
+
+
+
+  com.udfv.ecma167.UDF_FEDesc fe;
+
+  if (true) {
+      fe = image.findFEByPathname(null, "/8:DVD_RTAV/8:VR_MOVIE.VRO", false);
+  }
+  else {
+      fe = image.env.getRootFE(0);
+  }
+
+  jf = new JFrame();
+  jf.getContentPane().add(fe.createJBitmapPanel(800, 64));
+  jf.pack();
+  jf.setResizable(false);
+  jf.show();
+
+
+        byte [] bitmap;
+        int len;
+        java.awt.Color color;
+
+        if (image == null) {
+            return;
+        }
+
+	try{
+	    //len = image.getLenOfSpaceBitmap();
+	    len = image.env.getPartBitmap(0).getBitSize();
+	    if (len < 1 || !flag_desc264) {
+		//len = image.getLenOfCreatedSpaceBitmap();
+		len = (int)(image.env.getPartLen(0)/image.env.LBS);
+		if (len < 1) {
+		    return;
+		}
+		//bitmap =image.getCreatedSpaceBitmap();
+		bitmap = image.env.getPartBitmap(0).getData();
+		color = java.awt.Color.darkGray;
+	    }
+	    else {
+		bitmap = image.getSpaceBitmap();
+		color = java.awt.Color.blue;
+	    }
+	    
+	    drawBitmap(bitmap, len, color);
+	}
+	catch(UDF_VolException e){
+	    ;
+	}
+    }
+
+    public void drawBitmap(byte [] bitmap, int len, java.awt.Color color) {
+
+        JBitmapImage canvas = new JBitmapImage(bitmap, len, color);
+        canvas.setScale(scale);
+        canvas.packSize();
+
+        javax.swing.JComponent panel = (javax.swing.JComponent) ssPane.getBottomComponent();
+        java.awt.Insets pad = panel.getInsets();
+
+        JScrollPane panel2 = new JScrollPane(canvas);
+        java.awt.Insets pad2 = panel2.getInsets();
+
+        int w = (int)panel.getSize().getWidth();
+        int h = (int)canvas.getSize().getHeight() + pad2.top + pad2.bottom;
+        Dimension dm2 = new Dimension(w, h);
+
+        panel2.setSize(w, h);
+        panel2.setMinimumSize(dm2);
+        panel2.setMaximumSize(dm2);
+        panel2.setPreferredSize(dm2);
+
+        panel2.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+        panel2.setBackground(java.awt.Color.white);
+
+        int loc = ssPane.getDividerLocation();
+
+        ssPane.remove(panel);
+        ssPane.setBottomComponent(panel2);
+
+        ssPane.setDividerLocation(loc);
+    }
+
+    /*
+      UDF イメージファイルを読み取るスレッド。
+    */
+    class UdfReader implements Runnable {
+
+        String fname;
+        boolean done;
+
+        public void run() {
+
+            UDF_RandomAccessFile f = null;
+
+            try {
+                UDF_Env env = new UDF_Env();
+                env.image_file = fname;
+                f = new UDF_RandomAccessFile(env.image_file, "r");
+                env.f = f;
+                //UDF_ImageFactory.env = env;
+                image = UDF_ImageFactory.genImage(env, f);
+                image.setUDFDocument(UDF_Util.genDocument());
+                env.f = f;
+                image.setEnv(env);
+            }
+            catch(Exception e){
+                e.printStackTrace();
+                done = true;
+            }
+            try{
+                image.readFrom(f);
+//                f.close();
+            }
+            catch(Exception e){
+                e.printStackTrace();
+                done = true;
+            }
+            done = true;
+        }
+
+        public UdfReader(String fname) {
+            super();
+            done = false;
+            this.fname = fname;
+        }
+
+        public boolean isDone( ) {
+            return done;
+        }
+
+    }
+
+    /*
+      UDF 情報をTree表示する。
+    */
+    public void fromUdfToTree( ) {
+
+	try{
+	    dynaMutableTreeNode top = new dynaMutableTreeNode("UDF");
+	    remove(tree);
+	    tree = new dynaJTree(top);
+
+	    tree.getSelectionModel().setSelectionMode
+                (TreeSelectionModel.SINGLE_TREE_SELECTION);
+
+	    //Listen for when the selection changes.
+	    tree.addTreeSelectionListener(this);
+	    createNodes(image, top);
+	    add(tree);
+
+	    JScrollPane treeView = (JScrollPane) splitPane.getTopComponent();
+	    Dimension dm = treeView.getSize();
+
+	    treeView = new JScrollPane(tree);
+	    treeView.setMinimumSize(new Dimension(200, 50));
+	    treeView.setPreferredSize(dm);
+
+	    splitPane.remove(splitPane.getTopComponent());
+	    splitPane.setTopComponent(treeView);
+	}
+	catch(Exception e){
+	    e.printStackTrace();
+	}
+    }
+
+    /*
+      UDF 情報を元にディレクトリツリーを作成。
+    */
+    public void fromUdfToDirectoryTree( ) {
+        try {
+            dynaMutableTreeNode top = new dynaMutableTreeNode("(root)");
+            remove(tree);
+            tree = new dynaJTree(top);
+
+            tree.getSelectionModel().setSelectionMode
+                (TreeSelectionModel.SINGLE_TREE_SELECTION);
+
+            //Listen for when the selection changes.
+            tree.addTreeSelectionListener(this);
+
+            createDirectoryTree(image.env.getRootFE(0).getDirectoryList(), top);
+	    
+            add(tree);
+
+	    JScrollPane treeView = (JScrollPane) splitPane.getTopComponent();
+	    Dimension dm = treeView.getSize();
+
+            treeView = new JScrollPane(tree);
+	    treeView.setMinimumSize(new Dimension(200, 50));
+	    treeView.setPreferredSize(dm);
+
+            splitPane.remove(splitPane.getTopComponent());
+            splitPane.setTopComponent(treeView);
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public com.udfv.core.UDF_ElementBase findByXPATH(String str) {
+
+        com.udfv.core.UDF_ElementBase elem = image.findByXPATH(str);
+        if (elem == null) {
+            return null;
+        }
+
+
+        int idx;
+
+        String base = elem.getClass().getName();
+        idx = base.lastIndexOf(new String(".").charAt(0));
+        String cname = ( idx < 0 ) ? "": base.substring(idx + 1);
+
+        idx = str.lastIndexOf(new String("/").charAt(0));
+        String ename = ( idx < 0 ) ? "": str.substring(idx + 1);
+
+        if (!(ename.equals(cname))) {
+            return null;
+        }
+        return elem;
+    }
+
+    /*
+      読み込まれているUDF 情報の整合性を取る。
+    */
+    public void recalc( ) {
+        if (image == null) {
+            return;
+        }
+        image.recalc(UDF_ElementBase.RECALC_CRC, null);
+        image.recalc(UDF_ElementBase.RECALC_REF, null);
+//        image.recalc(UDF_ElementBase.RECALC_GP, null);
+        javax.swing.JOptionPane.showMessageDialog(this, "Re-Calculation", "complete", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    /*
+      XML からUDF 情報を読み取る。
+    */
+    public void readXML( ) {
+
+        org.apache.xerces.parsers.DOMParser parser = null;
+        org.w3c.dom.Document document = null;
+
+        try {
+            String input_xml = getFile();
+            if (input_xml == null) {
+                return;
+            }
+            parser = new org.apache.xerces.parsers.DOMParser();
+            parser.parse(input_xml);
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            document = parser.getDocument();
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+
+        try {
+            UDF_Env env = new UDF_Env();
+            image = new com.udfv.udf250.UDF_Image();
+            image.setEnv(env);
+            image.readFromXML(document);
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+
+        fromUdfToTree();
+
+        /*　イメージから読み込まないときはパーティションの長さが設定されていないらしい　*/
+        //int len = image.getLenOfCreatedSpaceBitmap();
+        int len = 0;
+	try{
+	    len = (int)(image.env.getPartLen(0)/image.env.LBS);//image.getLenOfCreatedSpaceBitmap();
+	}
+	catch(UDF_VolException e){
+	    e.printStackTrace();
+	}
+        if (len < 1) {
+            com.udfv.ecma167.UDF_desc5 desc5 = (com.udfv.ecma167.UDF_desc5) findByXPATH("/mvds/UDF_desc5");
+            if (null == desc5) {
+                desc5 = (com.udfv.ecma167.UDF_desc5) findByXPATH("/udf/rvds/UDF_desc5");
+            }
+            if (null != desc5) {
+                len = desc5.getPartLen().getIntValue();
+                len *= 2048;
+                //image.env.part_len = len;
+            }
+        }
+
+        drawBitmap();
+    }
+
+    /*
+      UDF 情報からイメージファイルを作成する。
+    */
+    public void saveUDF(String file) throws Exception {
+        if (file == null) {
+            return;
+        }
+        if (file.equals("")) {
+            return;
+        }
+        UDF_RandomAccessFile f = new UDF_RandomAccessFile(file);
+        image.writeTo(f);
+    }
+
+    /*
+      UDF イメージファイルを読み込む。
+    */
+    public void readUDF( ) {
+
+if (true) {
+        String input_image = getFile();
+        if (input_image == null) {
+            return;
+        }
+        UdfReader reader = new UdfReader(input_image);
+        java.lang.Thread runner = new java.lang.Thread(reader);
+        runner.start();
+        while(true) {
+            sleep(100);
+            if (reader.isDone()) {
+                break;
+            }
+        }
+        runner = null;
+        reader = null;
+}
+else {
+
+	UDF_RandomAccess f = null;
+	try{
+	    String input_image = getFile();
+	    if (input_image == null) {
+		return;
+	    }
+	    UDF_Env env = new UDF_Env();
+            env.image_file = input_image;
+	    f = new UDF_RandomAccessFile(env.image_file);
+	    env.f = f;
+	    //UDF_ImageFactory factory = new com.udfv.core.UDF_ImageFactory();
+	    //factory.setEnv(env);
+	    image = UDF_ImageFactory.genImage(env, f);
+	    image.setUDFDocument(UDF_Util.genDocument());
+	}
+	catch(Exception e){
+	    e.printStackTrace();
+	}
+	try{
+	    image.readFrom(f);
+	    f.close();
+	}
+	catch(Exception e){
+	    e.printStackTrace();
+	}
+}
+        fromUdfToTree();
+
+        drawBitmap();
+    }
+
+
+
+    /*
+      メニューイベント処理。
+    */
+    public void actionPerformed(ActionEvent ev){
+
+        String action = ev.getActionCommand();
+        if (action.equals("Exit")) {
+            flag_exit = true;
+            return;
+        }
+        if (action.equals("x 16")) {
+            flag_bitmap = true;
+            scale = 16;
+            return;
+        }
+        if (action.equals("x 2048")) {
+            flag_bitmap = true;
+            scale = 2048;
+            return;
+        }
+        if (action.equals("Create bitmap")) {
+            flag_bitmap = true;
+            flag_desc264 = false;
+            return;
+        }
+        if (action.equals("View desc264")) {
+            flag_bitmap = true;
+            flag_desc264 = true;
+            return;
+        }
+
+        event_type = new String(action);
+
+        if (action.equals("Open Image File ...")) {
+            event = true;
+            return;
+        }
+        if (action.equals("Save Image File ...")) {
+            event = true;
+            return;
+        }
+        if (action.equals("Verify")) {
+            event = true;
+            return;
+        }
+        if (action.equals("Re-Calculation")) {
+            event = true;
+            return;
+        }
+        if (action.equals("Save Xml ...")) {
+            event = true;
+            return;
+        }
+        if (action.equals("Open Xml ...")) {
+            event = true;
+            return;
+        }
+        if (action.equals("View UDF Element")) {
+            event = true;
+            return;
+        }
+        if (action.equals("View Directory")) {
+            event = true;
+            return;
+        }
+    }
+
+    public static void main(String[] args) {
+
+        if (useSystemLookAndFeel) {
+            try {
+                UIManager.setLookAndFeel(
+                    UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                System.err.println("Couldn't use system look and feel.");
+            }
+        }
+
+        //Make sure we have nice window decorations.
+        JFrame.setDefaultLookAndFeelDecorated(true);
+
+        ZFrame frame = new ZFrame("TreeDemo");
+
+        //Schedule a job for the event-dispatching thread:
+        //creating and showing this application's GUI.
+        //javax.swing.SwingUtilities.invokeLater(frame);
+        frame.loop();
+        frame.dispose();
+        frame = null;
+
+        System.out.println("finish.");
+        System.exit(0);
+    }
+
+}
+
+
+
+
+class ZFrame extends JFrame implements Runnable {
+
+    public TreeDemo tree_panel_;
+
+    public ZFrame(String title) {
+        super(title);
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        //Create and set up the content pane.
+        tree_panel_ = new TreeDemo();
+        tree_panel_.parent = this;
+
+        tree_panel_.setOpaque(true); //content panes must be opaque
+        setContentPane(tree_panel_);
+
+        tree_panel_.createMenuBar(this);
+
+        //Display the window.
+        pack();
+        setVisible(true);
+    }
+
+    public void run() {
+        loop();
+    }
+
+    public void loop() {
+
+        boolean flag_read = false;
+
+        while(true) {
+            TreeDemo.sleep(100);
+            if (tree_panel_.flag_exit) {
+                break;
+            }
+            if (tree_panel_.flag_bitmap) {
+                tree_panel_.drawBitmap();
+//                tree_panel_.repaint();
+
+                tree_panel_.flag_bitmap = false;
+                continue;
+            }
+            if (!tree_panel_.event) {
+                continue;
+            }
+            if (tree_panel_.event_type == null) {
+                continue;
+            }
+
+            if (flag_read && tree_panel_.image.env != null) {
+
+                if (tree_panel_.event_type.equals("Save Xml ...")) {
+
+                    try {
+                        String file = tree_panel_.getFile(false);
+                        if (file != null) {
+                            tree_panel_.image.outputXML(file);
+                            javax.swing.JOptionPane.showMessageDialog(tree_panel_, "output XML : " + file, "complete", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    }
+                    catch(Exception e) {
+                        System.err.println(e.toString());
+                    }
+                    tree_panel_.event = false;
+                    continue;
+                }
+
+                if (tree_panel_.event_type.equals("Save Image File ...")) {
+                    try {
+                        String file = tree_panel_.getFile(false);
+                        tree_panel_.saveUDF(file);
+                        javax.swing.JOptionPane.showMessageDialog(tree_panel_, "output Image : " + file, "complete", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                    }
+                    catch(Exception e) {
+                        System.err.println(e.toString());
+                    }
+                    tree_panel_.event = false;
+                    continue;
+                }
+
+                if (tree_panel_.event_type.equals("View UDF Element")) {
+                    tree_panel_.fromUdfToTree();
+                    tree_panel_.event = false;
+                    continue;
+                }
+
+                if (tree_panel_.event_type.equals("View Directory")) {
+                    if (tree_panel_.image.env.getRootFE(0) != null) {
+                        tree_panel_.fromUdfToDirectoryTree();
+                    }
+                    tree_panel_.event = false;
+                    continue;
+                }
+
+                if (tree_panel_.event_type.equals("Verify")) {
+
+                    UDF_ErrorList el = null;
+                    try {
+                        el = tree_panel_.image.verify();
+                    }
+                    catch(Exception e) {
+                        tree_panel_.image.debugMsg(0, e.toString());
+                    }
+                    System.gc();
+                    try {
+                        el.output();
+                    }
+                    catch(Exception e) {
+                        tree_panel_.image.debugMsg(0, e.toString());
+                    }
+
+                    tree_panel_.event = false;
+                    continue;
+                }
+
+                if (tree_panel_.event_type.equals("Re-Calculation")) {
+
+                    tree_panel_.recalc();
+                    tree_panel_.event = false;
+                    continue;
+                }
+
+
+            } // if (flag_read) ;
+
+            System.gc();
+
+            if (tree_panel_.event_type.equals("Open Xml ...")) {
+                tree_panel_.readXML();
+                tree_panel_.event = false;
+                flag_read = true;
+                continue;
+            }
+
+            if (tree_panel_.event_type.equals("Open Image File ...")) {
+                tree_panel_.readUDF();
+                tree_panel_.event = false;
+                flag_read = true;
+                continue;
+            }
+
+            javax.swing.JOptionPane.showMessageDialog(tree_panel_, "not support, yet", "sorry", javax.swing.JOptionPane.WARNING_MESSAGE);
+            tree_panel_.event = false;
+        }
+    }
+
+/*
+    //Handle mouse events.
+    public void mouseReleased(java.awt.event.MouseEvent e) {
+
+        if (javax.swing.SwingUtilities.isRightMouseButton(e)) {
+            repaint();
+        }
+    }
+*/
+}

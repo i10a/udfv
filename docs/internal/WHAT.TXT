@@ -1,0 +1,180 @@
+*
+* UDFV Library
+* Heart Solutions, Inc.
+* 2005/05/02
+*
+
+= 1. UDFVライブラリについて
+
+UDFVライブラリは OPTICAL STORAGE TECHNOLOGY ASSOCIATION (OSTA) が規定している
+ UNIVERSAL DISK FORMAT (UDF) に準じて記録されているメディアに対して
+UDF ファイルシステム情報のドキュメント変換、ドキュメントのイメージ変換、
+UDF としての整合性が取れているかを検証などを行うためのライブラリです。
+
+= 2. UDFVライブラリファイル
+
+UDFVライブラリは jar ファイル udfv.jar として提供されます。
+
+= 3. UDFV tools
+
+UDFVライブラリには以下の機能を持つツールがあります。
+
+-#  ディスクイメージファイルの UDF ファイルシステムの情報から XML ドキュメントファイルを作成する。
+-#  UDF ファイルシステムの情報の XML ドキュメントファイルからディスクイメージファイルを作成する。
+-#  UDF ファイルシステムの情報の XML ドキュメントファイルを読み取り XML ドキュメントを出力する。
+-#  ディスクイメージファイル上の UDF ファイルシステムの整合性を検証する。
+-#  UDF ファイルシステムの情報の XML ドキュメントファイルの整合性を取り XML ドキュメントを出力する。
+
+= 4. 動作環境
+
+UDFVライブラリを使用するためには、以下の環境が必要です。
+
+- Java(TM)アプリケーションを動作させることができる J2SE v 1.4.2 以降の環境。
+
+    J2SE Software Development Kit(SDK) v 1.4.2 もしくは
+    J2SE Java(TM) Runtime Environment (JRE) v 1.4.2 
+
+    Java 2 Platform, Standard Edition v 1.4.2 (J2SE) のダウンロードページ。
+      http://java.sun.com/j2se/1.4.2/ja/download.html
+
+J2SE SDKやJ2SE JREのインストールについては Sun の Web ページをご覧ください。
+
+- 'THE APACHE XML PROJECT'が提供している Java 2 用 XML パーサーライブラリ。
+  またはそれに準じるもの。
+
+    'THE APACHE XML PROJECT'の Xerces2 Java Parser の Web ページ。
+      http://xml.apache.org/xerces2-j/
+
+現時点(2005/05/02)での最新バージョンは Xerces2 Java Parser 2.6.2 Release です。
+
+= 5. UDFV tools の実行の前に
+
+UDFVライブラリを使用するためにはUDFVライブラリへのクラスパスの指定と
+ XML パーサーライブラリへのクラスパスの指定が必要となります。
+
+ FreeBSD や Linux などの PC-UNIX 環境でコマンドラインオプションとして指定するときは
+ 次のようになります。
+
+----------------------------------------------------------------------
+例）カレントディレクトリに udfv.jar ファイルがあり、Xerces2 Java Parser 2.6.2 Release が
+    カレントディレクトリに展開されている場合。
+
+> java -Xmx64m -cp ./udfv.jar:./xerces_2_6_2/xercesImpl.jar:./xerces_2_6_2/xml-apis.jar com.udfv.test.VerifyImg ....
+----------------------------------------------------------------------
+
+ Windows 2000 や Windows XP ではクラスパスの区切り文字が異なり、コロンではなく、
+セミコロンで指定する必要があります。
+
+----------------------------------------------------------------------
+例）Windows 2000, XP の場合。
+
+C:\UDFV> java -Xmx64m -cp .\udfv.jar;.\xerces_2_6_2\xercesImpl.jar;.\xerces_2_6_2\xml-apis.jar com.udfv.test.VerifyImg ....
+----------------------------------------------------------------------
+
+コマンドラインオプションで指定することを省きたい場合は、クラスパスを環境変数に設定する、
+もしくは JRE の拡張用ディレクトリに各ライブラリを複写する、などのことを行っておきます。
+
+参考）Windows XP に JRE をインストールした場合の拡張用ディレクトリ。
+
+C:\Program Files\Java\jre1.4.2_08\lib\ext\
+
+このディレクトリはインストール時の設定によって変化します。
+詳細は Sun の Java Web ページをご覧ください。
+
+複雑な構造やファイルを多数持つ UDF ファイルシステムの解析にはVirtual Machine(以下、VMとします)に
+多くのメモリを必要とすることがあります。そのときはオプションの指定で適切なメモリをVMに割り当てて
+ください。 Java の実行オプションについては Sun のドキュメントをご覧ください。
+
+= 6. UDFV tools の共通オプション
+
+UDFV tools では以下の共通するコマンドラインオプションが指定できます。
+
+------------------------------------------------------------------------------
+ -media_type <n>  メディアの種類を指定します。
+
+   -media_type 0   DVD
+   -media_type 16  BD
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ -media_mode <n>  メディアのモードを指定します。
+
+   -media_mode 0  Pseudo overwrite (POW)
+   -media_mode 1  Read only (RO)
+   -media_mode 2  Write once (WO)
+   -media_mode 3  Rewritable (RW)
+   -media_mode 4  Overwritable (OW)
+------------------------------------------------------------------------------
+
+= 7. UDFV tools の実行
+
+ここでは XML パーサーライブラリが Java 実行環境の拡張ディレクトリに複写されていて、
+UDFVライブラリがカレントディレクトリに存在するものと仮定します。
+
+== 7.1 Image file to XML Document 'Img2xml'
+  ディスクイメージファイルの UDF ファイルシステムの情報から XML ドキュメントファイルを作成する。
+
+各OS環境のコマンドライン実行環境（コマンドプロンプトやターミナルなど）で第一引数に
+ディスクイメージ名を渡してcom.udfv.test.Img2xml を実行します。
+ XML ドキュメントが標準出力されます。
+
+例）
+  > java -Xmx64m -cp ./udfv.jar com.udfv.test.Img2xml DVD_VR.IMG > DVD_VR.XML
+
+
+== 7.2 XML Document to Image file 'Xml2img'
+  UDF ファイルシステムの情報の XML ドキュメントファイルからディスクイメージファイルを作成する。
+
+各OS環境のコマンドライン実行環境で第一引数に XML ドキュメントファイル名を、
+第二引数にディスクイメージ名を渡して com.udfv.test.Xml2img を実行します。
+
+例）
+  > java -Xmx64m -cp ./udfv.jar com.udfv.test.Xml2img DVD_VR.XML DVD_VR.IMG
+
+
+== 7.3 UDFV Verifier 'VerifyImg'
+  ディスクイメージファイルの UDF ファイルシステムの整合性を検証する。
+
+各OS環境のコマンドライン実行環境で第一引数にディスクイメージ名を渡して
+com.udfv.test.Xml2img を実行します。
+検証結果が標準出力されます。
+
+例）
+   > java -Xmx64m -cp ./udfv.jar com.udfv.test.VerifyImg DVD_VR.IMG > REPORT.TXT
+
+オプションとして以下のものが設定できます。
+
+------------------------------------------------------------------------------
+  -revision <n>  リビジョンを指定して検証します。
+
+    -revision 200   UDF 2.00 として検証します。
+    -revision 201   UDF 2.01 として検証します。
+    -revision 250   UDF 2.50 として検証します。
+------------------------------------------------------------------------------
+
+
+== 7.4 XML Document to XML Document 'Xml2xml'
+  UDF ファイルシステム情報の XML ドキュメントを読み取り、 XML ドキュメントを出力します。
+
+各OS環境のコマンドライン実行環境で第一引数にディスクイメージ名を渡して
+com.udfv.test.Xml2xml を実行します。
+ XML ドキュメントが標準出力されます。
+
+例）
+  > java -Xmx64m -cp ./udfv.jar com.udfv.test.Xml2xml DVD_VR.XML > DVD_VR_NEW.XML
+
+
+== 7.5 Recalculate XML Document '{label RecalcXML}'
+  UDF ファイルシステムの情報の XML ドキュメントファイルの整合性を取り XML ドキュメントを出力する。
+
+UDF の各 descriptor の CRC 情報などを、可能な限り計算しなおして
+新たな XML ドキュメントとして出力します。
+
+各OS環境のコマンドライン実行環境で第一引数にディスクイメージ名を渡して
+com.udfv.test.RecalcXML を実行します。
+ XML ドキュメントが標準出力されます。
+
+例）
+  > java -Xmx64m -cp ./udfv.jar com.udfv.test.RecalcXML DVD_VR.XML > DVD_VR_NEW.XML
+
+

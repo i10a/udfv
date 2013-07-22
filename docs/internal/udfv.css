@@ -1,0 +1,56 @@
+h1.banner{ 
+  background: #fff;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  border-top: 5px #000 solid;
+  border-bottom: 5px #000 solid;
+}
+
+h1{
+  background: #fff;
+  
+  background: #ccf;
+  border-top: 1px #000 solid;
+  border-bottom: 1px #000 solid;
+  padding-right: 10px;
+}
+
+h2{
+  padding-right: 10px;
+  border-bottom: 1px #000 solid;
+}
+
+h3{
+  padding-right: 10px;
+  border-bottom: 1px #000 solid;
+}
+
+h4{
+  padding-right: 10px;
+}
+
+div.index{ 
+  padding-left: 10px;
+}
+
+div.chaptor{ 
+  padding-left: 10px;
+}
+
+div.appendix{ 
+  padding-left: 10px;
+}
+
+div.section{ 
+  padding-left: 20px;
+}
+
+div.subsection{ 
+  padding-left: 30px;
+}
+
+pre{ 
+  border: 1px #000 solid;
+  padding: 10px;
+  background: #ffc;
+}

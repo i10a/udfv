@@ -1,0 +1,22 @@
+%%com.udfv.ecma167
+
+%UDF_part_map1 UDF_PartMap
+@A
+Type&nbsp;1&nbsp;Partition&nbsp;Map&nbsp;を表現するクラス。
+
+@L
+Partition Map Type:uint8
+Partition Map Length:uint8::default=6
+Volume Sequence Number:uint16
+Partition Number:uint16
+@
+
+%UDF_part_map2 UDF_PartMap
+@A
+Type&nbsp;2&nbsp;Partition&nbsp;Map&nbsp;を表現するクラス。
+
+@L
+Partition Map Type:uint8
+Partition Map Length:uint8
+Partition Identifier:bytes:62
+@

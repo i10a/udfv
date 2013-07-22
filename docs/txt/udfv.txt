@@ -1,0 +1,12 @@
+= 1. UDFVライブラリについて
+
+UDFVライブラリは OPTICAL STORAGE TECHNOLOGY ASSOCIATION (OSTA) が規定している
+ UNIVERSAL DISK FORMAT (UDF) に準じて記録されているメディアに対して
+UDF ファイルシステム情報のドキュメント変換、ドキュメントのイメージ変換、
+UDF としての整合性が取れているかを検証などを行うためのライブラリです。
+
+
+
+= 2. UDFVライブラリファイル
+
+UDFVライブラリは jar ファイル udfv.jar として提供されます。

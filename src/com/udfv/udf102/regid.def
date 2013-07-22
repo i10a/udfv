@@ -1,0 +1,27 @@
+%%com.udfv.udf102
+
+%UDF_regid_UDFIdSuffix
+@L
+UDF Revision:uint16
+OS Class:uint8
+OS Identifier:uint8
+Reserved:bytes:4
+@
+
+%UDF_regid_UDFDomainIdSuffix
+@L
+UDF Revision:uint16
+Domain Flags:uint8
+Reserved:bytes:5
+@
+
+%UDF_regid_UDFImplIdSuffix
+@A
+Implementation&nbsp;Identifier&nbsp;Suffixを表現するクラス。
+
+@L
+OS Class:uint8
+OS Identifier:uint8
+Implementation Use Area:bytes:6
+@
+

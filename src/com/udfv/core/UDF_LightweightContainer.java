@@ -1,0 +1,97 @@
+/*
+
+*/
+package com.udfv.core;
+
+import com.udfv.exception.*;
+import com.udfv.access.*;
+import com.udfv.util.*;
+import com.udfv.ecma167.*;
+import java.io.*;
+import java.util.*;
+import org.w3c.dom.*;
+
+/**
+<dl>
+<dt>概要</dt>
+<dd>
+コンテナを表わすクラス
+</dd>
+<dt>詳細</dt>
+<dd>
+<p>
+UDF_SimpleContainerはそれ自身は何もしないが、内部に任意の子供を持つことができる。
+UDF_bytesと違い、バイトデータを保持しないので、メモリを節約できる。
+
+UDF_SimpleContainerのサイズは内部要素のサイズで決まる。
+
+</p>
+*/
+
+abstract public class UDF_LightweightContainer extends UDF_Element implements UDF_Container
+{
+    public UDF_LightweightContainer(UDF_Element elem, String prefix, String name){
+	super(elem, prefix, name == null ? "UDF_Container" : name);
+    }
+    /*
+    protected boolean hasGlobalPoint(){
+	return true;
+    }
+    */
+    public long getLongSize(){
+	long size = 0;
+	UDF_ElementList el = getChildList();
+	Iterator it = el.iterator();
+	while(it.hasNext()){
+	    UDF_Element elem = (UDF_Element)it.next();
+	    size  += elem.getLongSize();
+	}
+	if(marimite)
+	    setAttribute("size", size);
+
+	return size;
+    }
+
+    public int getSize(){
+	long size = 0;
+	UDF_ElementList el = getChildList();
+	Iterator it = el.iterator();
+	while(it.hasNext()){
+	    UDF_Element elem = (UDF_Element)it.next();
+	    size  += elem.getLongSize();
+	}
+	if(marimite)
+	    setAttribute("size", size);
+
+	return (int)size;
+    }
+
+    public void debug(int indent){ 
+	UDF_ElementList el = getChildList();
+	Iterator it = el.iterator();
+	while(it.hasNext()){
+	    UDF_Element elem = (UDF_Element)it.next();
+	    elem.debug(indent+1);
+	}
+    }
+    public void  changeChildHook(){
+	super.changeChildHook();
+	
+	if(marimite)
+	    setAttribute("size", getLongSize());
+    }
+
+    /**
+       互換のため
+     */
+    public void setSize(int sz){
+	debugMsg(3, "warning: UDF_SimpleContainer#setSize(int) do nothing");
+    }
+
+    /**
+       互換のため
+     */
+    public void setSize(long sz){
+	debugMsg(3, "warning: UDF_SimpleContainer#setSize(Long) do nothing");
+    }
+}

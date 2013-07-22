@@ -1,0 +1,100 @@
+%%com.udfv.ecma167
+
+%UDF_attr1 UDF_attr
+@A
+Character&nbsp;Set&nbsp;Information&nbsp;を表現するクラス。
+
+@L
+Attribute Type:uint32::default=1
+Attribute Subtype:uint8::default=1
+Reserved:bytes:3
+Attribute Length:uint32
+Escape Sequence Length:uint32
+Character Set Type:uint8
+Escape Sequence:bytes:getEscapeSeqLen().getIntValue()
+@
+
+%UDF_attr3 UDF_attr
+@A
+Alternate&nbsp;Permissions&nbsp;を表現するクラス。
+
+@L
+Attribute Type:uint32::default=3
+Attribute Subtype:uint8::default=1
+Reserved:bytes:3
+Attribute Length:uint32
+Owner Identification:uint16
+Group Identification:uint16
+Permission:uint16
+@
+
+%UDF_attr5 UDF_attr
+@A
+File&nbsp;Times&nbsp;Extended&nbsp;Attribute&nbsp;を表現するクラス。
+
+@L
+Attribute Type:uint32::default=5
+Attribute Subtype:uint8::default=1
+Reserved:bytes:3
+Attribute Length:uint32
+Data Length:uint32
+File Time Existence:uint32
+File Times:bytes:getDataLen().getIntValue()
+@
+
+%UDF_attr6 UDF_attr
+@A
+Information&nbsp;Times&nbsp;Extended&nbsp;Attribute&nbsp;を表現するクラス。
+
+@L
+Attribute Type:uint32::default=6
+Attribute Subtype:uint8::default=1
+Reserved:bytes:3
+Attribute Length:uint32
+Data Length:uint32
+Information Time Existence:uint32
+Information Times:bytes:getDataLen().getIntValue()
+@
+
+%UDF_attr12 UDF_attr
+@A
+Device&nbsp;Specification&nbsp;を表現するクラス。
+
+@L
+Attribute Type:uint32::default=12
+Attribute Subtype:uint8::default=1
+Reserved:bytes:3
+Attribute Length:uint32
+Implementation Use Length:uint32
+Major Device Identification:uint32
+Minor Device Identification:uint32
+Implementation Use:bytes:getImplUseLen().getIntValue()
+@
+
+%UDF_attr2048 UDF_attr
+@A
+Implementation&nbsp;Use&nbsp;Extended&nbsp;Attribute&nbsp;を表現するクラス。
+
+@L
+Attribute Type:uint32::default=2048
+Attribute Subtype:uint8::default=1
+Reserved:bytes:3
+Attribute Length:uint32
+Implementation Use Length:uint32
+Implementation Identifier:regid
+Implementation Use:bytes:getImplUseLen().getIntValue()
+@
+
+%UDF_attr65536 UDF_attr
+@A
+Application&nbsp;Use&nbsp;Extended&nbsp;Attribute&nbsp;を表現するクラス。
+
+@L
+Attribute Type:uint32::default=65536
+Attribute Subtype:uint8::default=1
+Reserved:bytes:3
+Attribute Length:uint32
+Application Use Length:uint32
+Application Identifier:regid
+Application Use:bytes:getApplicationUseLen().getIntValue()
+@

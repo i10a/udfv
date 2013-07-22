@@ -1,0 +1,1 @@
+@java -Xincgc -Xmx128m -classpath ./dist/lib/udfv.jar;lib/xercesImpl.jar;lib/xml-apis.jar com.udfv.gui.TreeDemo

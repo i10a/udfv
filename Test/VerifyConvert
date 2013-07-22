@@ -1,0 +1,43 @@
+#!/bin/sh
+
+CLASSPATH=./build:lib/xerces.jar:lib/xml-apis.jar:lib/xmlParserAPIs.jar
+
+BASE=`basename $1`
+SRCFILE=$1
+
+
+
+REMOVE=""
+if [ "$2" = "r" ]; then
+    shift
+    REMOVE="r"
+elif [ "$2" = "ri" ]; then
+    shift
+    REMOVE="ri"
+fi
+shift
+
+echo 1>&2 "java -Xincgc -Xmx128m -cp $CLASSPATH com.udfv.test.Img2xml $SRCFILE $@ > $BASE.cmpxml1"
+java -Xincgc -Xmx128m -cp $CLASSPATH com.udfv.test.Img2xml $SRCFILE $@ > $BASE.cmpxml1
+
+
+rm -f $BASE.cmpimg
+echo 1>&2 "java -Xmx512m -cp $CLASSPATH com.udfv.test.Xml2img $BASE.cmpxml1 $BASE.cmpimg $@"
+java -Xmx512m -cp $CLASSPATH com.udfv.test.Xml2img $BASE.cmpxml1 $BASE.cmpimg $@
+echo 1>&2 "java -Xincgc -Xmx128m -cp $CLASSPATH com.udfv.test.Img2xml $BASE.cmpimg > $BASE.cmpxmltmp"
+java -Xincgc -Xmx128m -cp $CLASSPATH com.udfv.test.Img2xml $BASE.cmpimg > $BASE.cmpxmltmp
+echo 1>&2 "java -Xincgc -Xmx128m -cp $CLASSPATH com.udfv.test.Img2xml $BASE.cmpimg > $BASE.cmpxml2"
+java -Xincgc -Xmx128m -cp $CLASSPATH com.udfv.test.Img2xml $BASE.cmpimg > $BASE.cmpxml2
+
+#echo 1>&2 "java -Xincgc -Xmx128m -cp $CLASSPATH com.udfv.test.FileNameFix $BASE.cmpxmltmp .cmpimg > $BASE.cmpxml2"
+java -Xincgc -Xmx128m -cp $CLASSPATH com.udfv.test.FileNameFix $BASE.cmpxmltmp $BASE.cmpimg $SRCFILE > $BASE.cmpxml2
+
+rm -f $BASE.cmpxmltmp
+diff -c $BASE.cmpxml1 $BASE.cmpxml2
+
+if [ "$REMOVE" = "r" ]; then
+    rm -f $BASE.cmpxml1 $BASE.cmpimg $BASE.cmpxml2
+elif [ "$REMOVE" = "ri" ]; then
+    rm -f $BASE.cmpimg
+fi
+

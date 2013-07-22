@@ -1,0 +1,56 @@
+= Exception一覧
+
+UDF_Exception
+	UDF_EncodingException
+	UDF_IOException
+	UDF_XMLException
+	UDF_EOFException
+	UDF_DescTagException
+	UDF_ICBException
+	UDF_NotImplException
+	UDF_DataException
+	UDF_PartMapException
+	UDF_InternalException
+
+= Exceptionの使い方
+
+UDF_Exception(およびその子クラス)は全て以下の形のコンストラクタを
+持つ
+
+    public UDF_Exception(UDF_ElementBase elem, String msg, short typ, short category, int info);
+    public UDF_Exception(UDF_ElementBase elem, String msg);
+
+elemには例外の個所が別りやすくなるため、例外が発生したクラスを入れなけ
+ればならない。ただし、UDF_RandomAccess等 UDF_ElementBaseから派生したク
+ラス以外を使用している場合はnullを指定する。
+
+msgは例外が発生したときの状況を説明するためのメッセージで人間が可読な
+メッセージを英語で入れなければらなない。
+
+typは例外が発生したイメージの UDFのリビジョンを入れなければならない。
+以下のものが用意されている。
+
+     T_BASIC     = 0x0001;
+     T_UNKNWON   = 0x0002;
+     T_ECMA119   = 0x0004;
+     T_ECMA167_2 = 0x0008;
+     T_ECMA167_3 = 0x0010;
+     T_UDF102    = 0x0100;
+     T_UDF150    = 0x0200;
+     T_UDF200    = 0x0400;
+     T_UDF201    = 0x0800;
+     T_UDF250    = 0x1000;
+
+categoryは例外の詳細を数値で分類したもので、指定の仕方は各例外によって
+異なる。
+
+    UDF_DescTagException:
+    C_BADTAGID = 1;	//TAGのIDが期待したものでない。infoに問題のIDを入れること
+    C_BADTAGCRC = 2;	//TAGのCRCが期待したものでない。infoに問題のCRCを入れること
+    C_BADTAGCHKSUM = 3; //TAGのchksumが期待したものでない。infoに問題のCHKSUMを入れること
+
+   その他の例外クラス:
+   仕様未決定  
+
+infoはさらなる例外の詳細である。必要ならば指定する。
+

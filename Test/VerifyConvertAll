@@ -1,0 +1,17 @@
+#!/bin/sh
+
+CLASSPATH=./build:lib/xerces.jar:lib/xml-apis.jar:lib/xmlParserAPIs.jar
+#IMAGEPATH=/export6/verifyimg
+IMAGEDIR=`dirname $1`
+IMAGEBASE=`basename $1`
+shift
+
+for file in `ls $IMAGEDIR/$IMAGEBASE/*.IMG`; do
+    echo
+    echo "************************************************************"
+    echo "Verifying $file..."
+    echo "************************************************************"
+    ./Test/VerifyConvert $file ri $@
+done
+
+

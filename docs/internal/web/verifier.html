@@ -1,0 +1,326 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-2022-jp">
+<link rev="made" href="mailto:&#105;nfo@heart-s.&#99;om">
+<style>
+<!--
+div.f1 {
+  font: italic bold 100%/100% serif;
+  font-size:x-large;
+  margin-top: 8px;
+  margin-bottom: 1em;
+}
+div.f2 {
+  border-top:1px solid blue;
+  border-bottom:1px solid blue;
+  border-left:0px solid aqua;
+  border-right:0px solid aqua;
+  background-color: aqua;
+  font: italic bold 100%/100% serif;
+}
+td.t1 {
+  border-top:1px solid blue;
+  border-bottom:1px solid blue;
+  border-left:0px solid aqua;
+  border-right:0px solid aqua;
+  background-color: aqua;
+}
+table.tm {
+  margin-left: 2em;
+}
+table.scrn {
+  border:0px solid white;
+  padding:0px;
+}
+//-->
+</style>
+<title>UDFV Verifier</title>
+</head>
+<body>
+<table style="width:100%;">
+<tr><td class=t1>
+<div style="font:italic bold 100%/100% serif; font-size:large; position:absolute; top:2em; right:10%; color:brown;">UDF<font style="font:italic bold 100%/100% serif; font-size:xx-large;color: brown;">V</font></div>
+<div class=f1>UDFV Verifier Version 0.90 （β）</div>
+</td></tr>
+</table>
+<p>
+<div style="font: italic 100%/100% serif;">目次</div><br>
+<a href="#overview">概要</a><br>
+<a href="#about_verification">検証される内容</a><br>
+<a href="#get_jre">J2SE Java<span style="font-size:x-small;">(TM)</span> Runtime Environment (JRE) の入手</a><br>
+<a href="#usage_udfv_verifier">UDFV Verifier の使用方法</a><br>
+<a href="#result">UDFV Verifier の結果出力</a><br>
+<a href="#udfv_verifier_options">UDFV Verifier のオプション</a><br>
+<a href="#reference_document">参考</a><br>
+</p>
+
+<p>
+<a name="overview"><div class=f2>概要</div></a><br>
+UDFV Verifier は UDFV tools の一つで、<a href="http://www.osta.org/"> OPTICAL STORAGE TECHNOLOGY ASSOCIATION (OSTA) </a>が規定している<a href="http://www.osta.org/specs/index.htm"> UNIVERSAL DISK FORMAT (UDF) </a>に準じて記録されているメディアに対してUDF としての整合性が取れているかを検証するためのアプリケーションです。
+</p>
+
+
+<p>
+<a name="about_verification"><div class=f2>検証される内容</div></a><br>
+<a href="http://www.osta.org/">OSTA</a>が規定する UDF のリビジョン <!-- 1.02, -->2.00, 2.01, 2.50 を対象としています。
+規定されている全ての内容を検証しているわけではありません。詳細は別紙を参照してください。<br>
+また、それらのベースセットとなっているECMA-167 3rd Edtion の一部を検証の対象としています。<br>
+</p>
+
+<p>
+<a name="get_jre"><div class=f2>J2SE Java<span style="font-size:x-small;">(TM)</span> Runtime Environment (JRE) の入手</div></a><br>
+UDFV Verifier はJava<span style="font-size:x-small;">(TM)</span>アプリケーションです。
+UDFV Verifier を動作させるためには J2SE Java<span style="font-size:x-small;">(TM)</span> Runtime Environment (JRE)、もしくはそれに準じる動作環境が必要です。<br>
+ J2SE 1.4.2 で動作確認を行っています。<br>
+<br>
+<a href="http://java.sun.com/">Sun Microsystems, Inc.のWeb サイト</a>から最新版の JRE を入手することが可能です。<br>
+入手方法、インストール方法はそれぞれのWeb ページの記載に従ってください。<br>
+</p>
+
+
+<p>
+<a name="usage_udfv_verifier"><div class=f2>UDFV Verifier の使用方法</div></a><br>
+フリー版 UDFV Verifier はコマンドラインで"com.udfv.test.VerifyImg"を指定して起動します。<br>
+フリー版 UDFV Verifier では検証の際に UDF で記録されているメディアの内容を一度ファイルにしておく必要があります。<br>
+</p>
+
+例）相対ディレクトリ lib にフリー版 UDFV Verifier を置いたときの起動例。<br>
+<p>
+<div style="font-family: 'Arial', 'Times New Roman'; border:1px solid gray; margin:0px 240px 0px 20px;">
+<table class=scrn>
+<tr><td>
+  <br>
+  > java -Xmx128m -cp ./lib/udfv-free.jar com.udfv.test.VerifyImg udf_disc.iso<br>
+  <br>
+</td></tr>
+</table>
+</div>
+</p>
+
+<p>
+<table class=tm>
+<tr><td>udf_disc.iso</td><td>検証の対象となるイメージファイル名</td></tr>
+<tr><td colspan=2>&nbsp;</td></tr>
+<tr><td colspan=2>
+複雑な構成の UDF を解析するときには多くのメモリが必要になることがあります。<br>
+そのときはVirtual Machineに与えるメモリ数を調整してください。
+</td></tr>
+</table>
+</p>
+
+<p>
+<a name="result"><div class=f2>UDFV Verifier の結果出力</div></a><br>
+UDFV Verifier は検証の結果を標準出力に出力します。<br>
+結果は次の５段階に分かれています。<br>
+<br>
+<table class=tm>
+<tr><td>出力なし           </td><td>正しく内容を認識できます。</td></tr>
+<tr><td>注意(Caution)      </td><td>UDF の規定では触れられていませんが、注意が必要な記録内容があります。</td></tr>
+<tr><td>警告(Warning)      </td><td>UDF の規定に違反してはいませんが、推奨されない記録内容があります。</td></tr>
+<tr><td>エラー(Error)      </td><td>UDF の規定に違反している記録内容がありますが、問題点が独立しており、他に影響を与えません。</td></tr>
+<tr><td>致命的エラー(Alert)</td><td>UDF の規定に違反している記録内容があり、記録内容を正しく認識することができません。</td></tr>
+</table>
+<br>
+問題を検出したときには次のように情報を出力します。
+<div style="font:italic bold 100%/100% serif;"><br>
+[対象のUDF リビジョン、もしくはECMA167][結果の段階][問題が起こった論理セクタの番号][規定のあるドキュメント]<br>
+[問題が起こったUDF Elementの情報]<br>
+記録されている内容(Recorded)と期待される数値(Excepted)　※特定できる場合のみ<br>
+規定の引用<br>
+</div>
+<br>
+※ECMA-167に規定が無く、UDF で実装されているものに関してECMA-167の注意の結果が出力されることがあります。<br>
+<br>
+出力の最後に、各種結果の個数を表示します。<br>
+<br>
+<div style="font:bold 100%/100% serif;">出力結果のサンプル</div>
+<div style="font-family: 'Arial', 'Times New Roman'; border:1px solid gray; margin:0px 240px 0px 20px;">
+[UDF2.50] [Error] [UDF2.50 2.2.3]<br>
+Recorded: ' 256 '<br>
+An AnchorVolumeDescriptorPointer structure shall be recorded in at least 2 of the following 3 locations on the media:<br>
+&nbsp;Logical Sector 256.<br>
+&nbsp;Logical Sector (N - 256). <br>
+&nbsp;N<br>
+<br>
+[UDF2.50] [Warning] [LSN 1412] [UDF2.50 5.2.2]<br>
+[Space Bitmap Descriptor.Bitmap(Partition Number 0)]<br>
+Following blocks not marked as unallcated. Orphan space may exist within a logical volume, but it is not recommended since some type of logical volume repair facility may reallocate it.<br>
+logical block  137  thru 145,   8 blocks<br>
+logical block  160  thru 192,  32 blocks<br>
+<br>
+[UDF2.50] [Warning] [LSN 1554] [UDF2.50 5.2.2]<br>
+[Space Bitmap Descriptor.Bitmap(Partition Number 1)]<br>
+Following blocks not marked as unallcated. Orphan space may exist within a logical volume, but it is not recommended since some type of logical volume repair facility may reallocate it.<br>
+logical block   0  thru  6,  6 blocks<br>
+logical block  16  thru 24,  8 blocks<br>
+<br>
+[UDF2.50] [Error] [LSN 289] [UDF2.50 2.2.9, 6.12.2, 6.13.2.1]<br>
+[Volume Descriptor Sequence.Logical Volume Descriptor.PartitionMaps.UDF Sparable Partition Map.Packet Length]<br>
+Recorded: '32'<br>
+Expected: '16'<br>
+the number of user data blocks per fixed packet. This value is specified in the medium specific section of Appendix 6. In case of use of UDF on DVD+/-RW media, length of a packet shall be 16 sectors(32 KB) and the first sector number of a packet shall be an integral multiple of 16. <br>
+<br>
+[UDF2.50] [Error] [LSN 1377] [UDF2.50 2.2.9, 6.12.2, 6.13.2.1]<br>
+[Volume Descriptor Sequence.Logical Volume Descriptor.PartitionMaps.UDF Sparable Partition Map.Packet Length]<br>
+Recorded: '32'<br>
+Expected: '16'<br>
+the number of user data blocks per fixed packet. This value is specified in the medium specific section of Appendix 6. In case of use of UDF on DVD+/-RW media, length of a packet shall be 16 sectors(32 KB) and the first sector number of a packet shall be an integral multiple of 16. <br>
+<br>
+[ECMA167] [Error] [LSN 1408]<br>
+[Logical Volume Integrity Sequence.Unused bytes]<br>
+Unused bytes following descriptor till the end of the logical block shall have a value of #00.<br>
+<br>
+[ECMA167] [Error] [LSN 1410]<br>
+[Logical Volume Integrity Sequence.Unused bytes]<br>
+Unused bytes following descriptor till the end of the logical block shall have a value of #00.<br>
+<br>
+[ECMA167] [Caution] [LSN 1553] [ECMA167 4/14.6.6]<br>
+[Extended File Entry.ICB Tag.File Type]<br>
+Recorded: '250'<br>
+This field shall specify the type of the file as shown in figure 4/17.<br>
+248-255: Shall be subject to agreement between the originator and recipient of the medium<br>
+<br>
+[ECMA167] [Caution] [LSN 1553] [ECMA167 4/14.9.15]<br>
+[Extended File Entry.Checkpoint]<br>
+Recorded: '0'<br>
+This field shall contain 1 for the first instance of a file and shall be incremented by 1 when directed to do so by the user.<br>
+<br>
+[ECMA167] [Caution] [LSN 1600] [ECMA167 4/14.6.6]<br>
+[Extended File Entry.ICB Tag.File Type]<br>
+Recorded: '251'<br>
+This field shall specify the type of the file as shown in figure 4/17.<br>
+248-255: Shall be subject to agreement between the originator and recipient of the medium<br>
+<br>
+[ECMA167] [Caution] [LSN 1600] [ECMA167 4/14.9.15]<br>
+[Extended File Entry.Checkpoint]<br>
+Recorded: '0'<br>
+This field shall contain 1 for the first instance of a file and shall be incremented by 1 when directed to do so by the user.<br>
+<br>
+[UDF2.50] [Error] [LSN 1554] [UDF2.50 2.3.6.5]<br>
+[Metadata Bitmap Extended File Entry.LogicalBlocksRecorded]<br>
+Recorded: '1'<br>
+Expected: '0'<br>
+For files and directories with embedded data the value of this field shall be ZERO.<br>
+<br>
+[ECMA167] [Caution] [LSN 1554] [ECMA167 4/14.6.6]<br>
+[Extended File Entry.ICB Tag.File Type]<br>
+Recorded: '252'<br>
+This field shall specify the type of the file as shown in figure 4/17.<br>
+248-255: Shall be subject to agreement between the originator and recipient of the medium<br>
+<br>
+[ECMA167] [Caution] [LSN 1554] [ECMA167 4/14.9.15]<br>
+[Extended File Entry.Checkpoint]<br>
+Recorded: '0'<br>
+This field shall contain 1 for the first instance of a file and shall be incremented by 1 when directed to do so by the user.<br>
+<br>
+[ECMA167] [Caution] [LSN 1570] [ECMA167 4/14.9.15]<br>
+[File Entry.Checkpoint]<br>
+Recorded: '0'<br>
+This field shall contain 1 for the first instance of a file and shall be incremented by 1 when directed to do so by the user.<br>
+<br>
+[UDF2.50] [Error] [LSN 1573] [UDF2.50 2.3.6.5]<br>
+[File Entry.LogicalBlocksRecorded]<br>
+Recorded: '1'<br>
+Expected: '0'<br>
+For files and directories with embedded data the value of this field shall be ZERO.<br>
+<br>
+[ECMA167] [Caution] [LSN 1573] [ECMA167 4/14.9.15]<br>
+[File Entry.Checkpoint]<br>
+Recorded: '0'<br>
+This field shall contain 1 for the first instance of a file and shall be incremented by 1 when directed to do so by the user.<br>
+<br>
+[UDF2.50] [Error] [LSN 1571] [UDF2.50 3.3.4.3.1]<br>
+[Extended File Entry.Extended Attributes.File Times Extended Attributes (Attribute Type = 5)]<br>
+If the main File Entry is an Extended File Entry, this structure shall not be recorded with a file creation time.<br>
+<br>
+[ECMA167] [Caution] [LSN 1571] [ECMA167 4/14.9.15]<br>
+[Extended File Entry.Checkpoint]<br>
+Recorded: '0'<br>
+This field shall contain 1 for the first instance of a file and shall be incremented by 1 when directed to do so by the user.<br>
+<br>
+[UDF2.50] [Error] [LSN 1572] [UDF2.50 3.3.4.3.1]<br>
+[Extended File Entry.Extended Attributes.File Times Extended Attributes (Attribute Type = 5)]<br>
+If the main File Entry is an Extended File Entry, this structure shall not be recorded with a file creation time.<br>
+<br>
+[ECMA167] [Caution] [LSN 1572] [ECMA167 4/14.9.15]<br>
+[Extended File Entry.Checkpoint]<br>
+Recorded: '0'<br>
+This field shall contain 1 for the first instance of a file and shall be incremented by 1 when directed to do so by the user.<br>
+<br>
+<br>
+/// VERIFY COMPLETE ///<br>
+<br>
+ALERT:   0<br>
+ERROR:   9<br>
+WARNING: 2<br>
+CAUTION: 10
+</div>
+</p>
+
+<a name="udfv_verifier_options"><div class=f2>UDFV Verifier のオプション</div></a>
+<p>
+-revison UDF のリビジョンを特定した検証を行います。
+<table class=tm>
+<!-- 
+<tr><td>-revision 102</td><td>UDF 1.02を指定します。</td></tr>
+<tr><td>-revision 150</td><td>UDF 1.50を指定します。</td></tr>
+ -->
+<tr><td>-revision 200</td><td>UDF 2.00を指定します。</td></tr>
+<tr><td>-revision 201</td><td>UDF 2.01を指定します。</td></tr>
+<tr><td>-revision 250</td><td>UDF 2.50を指定します。</td></tr>
+<!-- 
+<tr><td>-revision 260</td><td>UDF 2.60を指定します。</td></tr>
+ -->
+</table>
+指定しないときは UDF からリビジョン情報を読み取って適切なリビジョンの検証を行うことを試みます。
+</p>
+<p>
+-media_type メディアの種類を指定します。
+<table class=tm>
+<tr><td>-media_type 0</td><td>Digital Versatile discs (DVD)</td></tr>
+<tr><td>-media_type 16</td><td>Blu-ray Disc (BD)</td></tr>
+</table>
+指定しないときは DVD として扱います。
+</p>
+<p>
+-media_mode メディアのモードを指定します。
+<table class=tm>
+<tr><td>-media_mode 0</td><td>Pseudo overwrite (POW)</td></tr>
+<tr><td>-media_mode 1</td><td>Read only (RO)</td></tr>
+<tr><td>-media_mode 2</td><td>Write once (WO)</td></tr>
+<tr><td>-media_mode 3</td><td>Rewritable (RW)</td></tr>
+<tr><td>-media_mode 4</td><td>Overwritable (OW)</td></tr>
+</table>
+指定しないときは Overwritable として扱います。
+</p>
+
+<p>
+-version UDFV Verifier のバージョンを表示します。
+</p>
+
+<p>
+<a name="reference_document"><div class=f2>参考</div></a><br>
+<a href="http://www.osta.org">OSTAのWeb サイト</a><br>
+<a href="http://www.osta.org/specs/index.htm">OSTAの UDF のWeb サイト</a><br>
+<a href="http://www.ecma-international.org/">ECMA InternationalのWeb サイト</a><br>
+<a href="http://java.sun.com/">Sun Microsystems, Inc.（米国）のJava<span style="font-size:x-small;">(TM)</span>のWeb サイト</a><br>
+<a href="http://sdc.sun.co.jp/java/index.html">サンマイクロシステムズ（日本）のJava<span style="font-size:x-small;">(TM)</span>のWeb サイト</a><br>
+<a href="http://java.sun.com/j2se/1.4.2/ja/download.html">Sun Microsystems, Inc.のJava<span style="font-size:x-small;">(TM)</span> 2 Platform, Standard Edition, v 1.4.2 (J2SE) のダウンロードページ</a><br>
+<a href="http://www.dvdforum.org/">DVD FORUMのWeb サイト</a><br>
+<a href="http://www.dvdrw.com/">DVD+RW AllianceのWeb サイト</a><br>
+<a href="http://www.blu-raydisc.com/">Blu-ray Disc AssociationのWeb サイト</a><br>
+</p>
+
+<!------------------------------------------------------------------------------>
+<hr size ="2" width="100%" noshade>
+<a href="http://udfv.com" style="font: italic 100%/100% serif;">UDFV のホームページへ</a>
+<!------------------------------------------------------------------------------>
+<hr size ="2" width="100%" noshade>
+<div style="color:gray;">Copyright (C) 2005 Heart Solutions, Inc. All Rights Reserved.</div>
+<address>
+	mailto: &#105;nfo@heart-s.&#99;om<br>
+	Last update: 2005/04/12
+</address>
+</body>
+</html>

@@ -1,0 +1,691 @@
+#!/usr/bin/perl
+
+#
+# genは 通称 defファイルから Javaのクラスファイルを自動で生成する
+# perl scriptである。
+#
+# defファイルの書き方
+# - #で始まる行はコメントである。無視される。
+# - %%で始まる行で、作成するクラスのパッケージ名を指定することができる
+#   デフォルトは com.udfv.ecma167である。
+#
+# - %で始まる行からクラスの定義が始まる。%の次の文字から最初の空白までが
+#    クラス名。その後にどのクラスから継承するかが記述られる。継承を省略
+#    すると UDF_Elementになる。
+#
+#   例)
+#   %UDF_desc261 UDF_FEDesc
+#	↓
+#   public class UDF_desc261 extends UDF_FEDesc{
+# 
+#
+# - %によるクラス定義以降 @で始まる行は定義セクションである。
+#   @の次の一文字で定義セクションの意味が決まる。その次の行から
+#   次の@で始まる定義セクションまたは %で始まるクラス定義までが
+#   そのセクションとなる。
+#
+# 次の3パラメータは javadoc用である。
+# -- @A 	classの概要を書くことができる(Abstract)
+# -- @D		classの記述を書くことができる(Description)
+#
+# 次のパラメータは code生成用である。
+# -- @C 	classのメソッド、変数等、classに埋めこみたいコードを
+#		書くことができる。
+#		(実際は begin:〜end:にコードを書けばいいのでほとんど意味がない)
+# -- @Q		import終了後に埋めこみたいコードを書くことができる。
+#
+# 次のパラメータはclassにインプリメントするインターフェースを記述するためのものである。
+# -- @I 	
+#
+# 次のパラメータはクラスのメンバ変数を記述するためのものである
+# -- @L
+#	各行は:で区切り
+#
+#	メンバ名:型:サイズ:属性
+#
+#	となる。サイズ、属性のフィールドは不要ならば省略してもよい。
+#	
+#	- メンバ名はUDFのドキュメントの名称をつける
+#	- 型は UDF_を取りさったクラスを指定する
+#	- サイズはサイズが必須のパラメータ用である(bytes等)
+#	- 属性は <属性名>=<値>で記述する。カンマで区切って複数指定ができる。
+#	  現在指定できる属性は以下の通り
+# 	-- default	デフォルト値
+#	-- encoding	エンコーディング
+#	-- base		型のパッケージ。現在のクラスと異なるときに指定する。
+#
+#
+my $CLASS;
+my $PACKAGE = "com.udfv.ecma167";
+my $DSTDIR = "com/udfv/ecma167";
+my %ELEMENT_dupflag;
+
+while(@ARGV){
+  my $mode;
+  
+  my $PREFIX = "";
+  my $file = shift @ARGV;
+  open F, $file or die($!);
+  while(<F>){
+    chop;
+    if (/^\%\%/) {
+      my @l = split(/\s+/, $');
+      $DSTDIR = $PACKAGE = $l[0];
+      $DSTDIR =~ s/\./\//g;
+      $PACKAGE =~ /\.([^\.]+)$/;
+      if($l[1]){
+	$PREFIX = "$l[1]:";
+      }
+
+      print STDERR "package $PACKAGE\n";
+      print STDERR "dstdir $DSTDIR\n";
+    }
+    elsif (/^\%/) {
+      ($CLASS, $EXTENDS) = split(/\s+/, $');
+      if (!$EXTENDS) {
+	$EXTENDS = "UDF_Element";
+      }
+      @CONST = ();
+      @VALLIST = ();
+      @VAL = ();
+      @ELEMENT = ();
+      @ATTLIST = ();
+      @GET = ();
+      @SET = ();
+      @READ = ();
+      @READXML = ();
+      @WRITE = ();
+      @WRITEXML = ();
+      @CODE = ();
+      @DESC = ();
+      @IMPORT = ();
+      @ABSTRACT = ();
+      @IMPLEMENTS = ();
+      @TBL = ();
+      @DEFAULT = ();
+      @APPLY = ();
+      @DUP = ();
+      $SIZE = "0";
+    }
+    elsif (/^\@L/) {
+      $mode = "L";
+    } 
+    elsif (/^\@C/) {
+      $mode = "C";
+    }
+    elsif (/^\@A/) { # Abstract
+      $mode = "A";
+    }
+    elsif (/^\@D/) { # Description
+      $mode = "D";
+    }
+    elsif (/^\@Q/) { # import
+      $mode = "Q";
+    }
+    elsif (/^\@I/) { # implements
+      $mode = "I";
+    }
+    elsif (/^\@/) {
+      &output;
+      $mode = undef;
+    }
+    elsif ($mode eq "C"){
+      push(@CODE, $_);
+    } 
+    elsif ($mode eq "D"){
+      chomp($_);
+      s/\s//g;
+      push(@DESC, $_);
+    } 
+    elsif ($mode eq "Q"){
+      chomp($_);
+      s/\s//g;
+      push(@IMPORT, $_);
+    } 
+    elsif ($mode eq "A"){
+      chomp($_);
+      s/\s//g;
+      push(@ABSTRACT, $_);
+    } 
+    elsif ($mode eq "I"){
+      chomp($_);
+      push(@IMPLEMENTS, $_);
+    } 
+    elsif ($mode eq "L") {
+      my ($body, $flags) = split(/\%/, $_);
+      my %FLAG;
+      my @flags = split($flags, /,/);
+      while(@flags){
+	$_ = shift @flags;
+	/=/;
+	$FLAG{$`} = $';
+      }
+      $_ = $flags;
+      /=/;
+      $FLAG{$`} = $';
+
+      $VALBASE = $FLAG{'base'};
+      if($VALBASE){
+	$VALBASE .= ".";
+      }
+
+      my ($val, $typ, $size, $opt) = split(/:/, $body);
+      $tag = &norm($val,0);
+      $tag =~ tr/A-Z/a-z/;
+
+      my %opt;
+      my @opt = split(/,/, $opt);
+      map{
+	/=/;
+	$opt{$`} = $';
+      }@opt;
+
+      $Val = $val = &norm($val, 1);
+      $Val =~ s/^([a-z])/uc($1)/e;
+
+      $java_typ = $Typ = $typ;
+      $Typ =~ s/^([a-z])/uc($1)/e;
+
+      # read/write タイプ
+
+      if(0){
+      } 
+      else{
+	$java_typ = "UDF_$typ";
+	push(@VALLIST, "$val");
+	push(@VAL, "${VALBASE}UDF_$typ $val");
+	push(@ELEMENT, "$PREFIX$tag \%$PREFIX$typ;");
+
+	my $sz;
+#	my $prefix = qq'"$CLASS"';
+	my $prefix = qq'"$PREFIX"';
+	$prefix =~ s/://;
+
+	if($typ eq "uint8"){
+	  $sz = "1";
+	}
+	elsif($typ eq "uint16"){
+	  $sz = "2";
+	}
+	elsif($typ eq "uint32"){
+	  $sz = "4";
+	}
+	elsif($typ eq "uint64"){
+	  $sz = "8";
+	}
+	else{
+	  $sz = "$val.getSize()";
+	}
+
+	push(@READXML, qq'    else if(name.equals("$tag")){');
+	if ($size ne undef) {
+	  push(@READ, qq'$val = (UDF_$typ)createElement("UDF_$typ", $prefix, "$tag")');
+	  push(@READXML, qq'\t$val = (UDF_$typ)createElement("UDF_$typ", $prefix, "$tag");');
+	  push(@DEFAULT, qq'$val = (UDF_$typ)createElement("UDF_$typ", $prefix, "$tag");');
+	  if($typ eq "pad"){
+	    push(@READ, qq'$val.setAlign($size)');
+	    push(@READXML, qq'\t$val.setAlign($size);');
+	    push(@DEFAULT, qq'$val.setAlign($size);');
+	  }
+	  elsif($typ eq "ECMA119DirectoryRecord"){
+	    push(@READ, qq'$val.setHintSize($size)');
+	    push(@READXML, qq'\t$val.setHintSize($size);');
+	    push(@DEFAULT, qq'$val.setHintSize($size);');
+	  }
+	  else{
+	    push(@READ, qq'$val.setSize($size)');
+	    push(@READXML, qq'\t$val.setSize($size);');
+	    push(@DEFAULT, qq'$val.setSize($size);');
+	  }
+	} 
+	else {
+	  push(@READ, qq'$val = (UDF_$typ)createElement("UDF_$typ", $prefix, "$tag")');
+	  push(@DEFAULT, qq'$val = (UDF_$typ)createElement("UDF_$typ", $prefix, "$tag");');
+	  push(@READXML, qq'\t$val = (UDF_$typ)createElement("UDF_$typ", $prefix, "$tag");');
+	}
+	push(@WRITE, qq'wsize += $val.writeTo(f)');
+
+	my $sss = $size;
+	if(!$sss){
+	  $sss = $sz;
+	}
+	push(@TBL, "<tr><td><b>$Val</b></td><td><b>UDF_$typ</b></td><td><i>$sss</i></td></tr>");
+	
+	$SIZE .= "+$sz";
+      }
+      push(@GET, "$VALBASE$java_typ get$Val\(\){return $val;}");
+      push(@SET, "void set$Val\($VALBASE$java_typ v\){replaceChild(v, $val); $val = v;}");
+
+      my $enc = $opt{'encoding'};
+      if($enc){
+	push(@READ, qq'$val.setEncoding(new UDF_Encoding$enc())');
+	push(@DEFAULT, qq'$val.setEncoding(new UDF_Encoding$enc());');
+	push(@READXML, qq'\t$val.setEncoding(new UDF_Encoding$enc());');
+      }
+      push(@READ, "rsize += $val.readFrom(f)");
+      push(@DEFAULT, "$val.setDefaultValue();");
+      push(@APPLY, "appendChild($val);");
+
+      push(@READXML, qq'\t$val.readFromXML(child);');
+      push(@READXML, qq'    }');
+
+      push(@DUP, qq'\tdup.set$Val(($VALBASE$java_typ)$val.duplicateElement());');
+
+      my $defaultval = $opt{'default'};
+      if($defaultval){
+	push(@DEFAULT, qq'$val.setValue($defaultval);');
+      }
+    }
+  }
+  close F;
+
+#  &output;
+}
+
+sub output{
+  if(!$CLASS){
+    return;
+  }
+  
+  my @YOURCODE;
+  my $file = "src/$DSTDIR/$CLASS.java";
+  if(-e $file){
+    open I, $file;
+    my $code;
+
+    while(<I>){
+      chop;
+      if(/^\/\/begin:/){
+	$code = 1;
+      }
+      elsif(/^\/\/end:/){
+	$code = 0;
+      }
+      elsif($code){
+	push(@YOURCODE, $_);
+      }
+    }
+    close I;
+  }
+
+  $dtd = $file;
+  $dtd =~ s/java/dtd/;
+
+  print "Output $dtd\n";
+  open O, ">$dtd" or die($!);
+
+  print O <<"_T_";
+<!--
+============================================================
+$file
+============================================================
+-->
+_T_
+  print O "<!ELEMENT $PREFIX$CLASS (\n";
+  my @l;
+  map{
+    my ($t) = split(/ /, $_);
+    push(@l, $t);
+  }@ELEMENT;
+  print O "\t".join(",\n\t", @l);
+  print O "\n)>\n";
+
+  map{
+    if(!$ELEMENT_dupflag{$_}){
+      print O "<!ELEMENT $_>\n";
+      if(/bytes;/){
+	my $q = $_;
+	$q =~ s/;/-att;/;
+	print O "<!ATTLIST $q>\n";
+      }
+      $ELEMENT_dupflag{$_} = $CLASS;
+    }
+    else{
+      print O "<!-- $_ ==> $ELEMENT_dupflag{$_} -->\n";
+    }
+  }@ELEMENT;
+
+  close O;
+
+  print "Output $file\n";
+  open O, ">$file" or die($!);
+
+  if(@IMPORT){
+    $IMPORT = "import " . join("\nimport ", @IMPORT) . "\n";
+  }
+  else{
+    $IMPORT = undef;
+  }
+
+  print O <<"_T_";
+/*
+*/
+package $PACKAGE;
+
+import java.io.*;
+import java.util.*;
+import org.w3c.dom.*;
+import com.udfv.core.*;
+import com.udfv.util.*;
+import com.udfv.encoding.*;
+import com.udfv.access.*;
+import com.udfv.exception.*;
+import com.udfv.ecma167.*;
+$IMPORT
+_T_
+
+  if(@DESC){
+    $DESC = join("<br/>\n", @DESC);
+    $DESC = "<dt>詳細</dt><dd>$DESC</dd>";
+  }
+  else{
+    $DESC = undef;
+  }
+  if(@ABSTRACT){
+    $ABSTRACT = join("<br/>\n", @ABSTRACT);
+  }
+  else{
+    $ABSTRACT = "no documents.(AUTOMATICALY GENERATED)";
+  }
+  if(@IMPLEMENTS){
+    $IMPLEMENTS = "implements @IMPLEMENTS";
+  }
+  else{
+    $IMPLEMENTS = undef;
+  }
+  if(@DEFAULT){
+    $DEFAULT = "
+    /**
+	初期値を設定する
+    */
+    public void setDefaultValue(){
+	super.setDefaultValue();
+";
+    map{
+      $DEFAULT .= "\t$_\n";
+    }@DEFAULT;
+    $DEFAULT .= "
+	apply( );
+	postSetDefaultValueHook();
+    }
+";
+  }
+  else{
+    $DEFAULT = undef;
+  }
+  $TBL = join("\n", @TBL);
+  print O <<_T_;
+/**
+$ABSTRACT
+
+<dl>
+$DESC
+<dt>フィールド一覧</dt>
+<dd>
+<table border="1">
+<tr><td>メンバ</td><td>型</td><td>サイズ</td></tr>
+$TBL
+</table>
+</dd>
+</dl>
+*/
+_T_
+	
+  print O "public class $CLASS extends $EXTENDS $IMPLEMENTS\n";
+  print O "{\n";
+
+  print O <<"_T_";
+
+    /**
+	このオブジェクトのパッケージ名を除いたクラス名を取得する。
+
+	\@return クラス名
+    */
+    public static String getUDFClassName( ) {
+        return "$CLASS";
+    }
+
+    /**
+	コンストラクタ。
+
+	\@param elem   親エレメント。
+	\@param prefix ネームスペース。
+	\@param name   エレメント名。
+    */
+    public $CLASS(UDF_Element elem, String prefix, String name){
+	super(elem, prefix, name == null ? getUDFClassName() : name);
+	init();
+    }
+    /**
+	このUDFエレメントのサイズを返す。
+
+	\@return UDFエレメントのサイズ。
+    */
+    public int getSize(){
+	return $SIZE;
+    }
+
+    /**
+	このUDFエレメントのサイズをlong 型で返す。
+
+	\@return UDFエレメントのサイズ。
+    */
+    public long getLongSize(){
+	return (long)$SIZE;
+    }
+_T_
+
+
+  map{
+    print O "    private $_;\n";
+  } @VAL;
+  print O "\n";
+
+  map{
+    my $v = $_;
+    $v =~ /return (\w+);/;
+    print O <<_T_;
+    /**
+	$1を取得する。
+
+	\@return 取得した$1 を返す。
+    */
+_T_
+    print O "    public $_\n";
+  } @GET;
+  print O "\n";
+
+  map{
+    my $v = $_;
+    $v =~ /;\s(\w+)\s=/;
+  print O <<_T_;
+    /**
+	$1を設定する。
+
+	\@param	v 設定する値。
+    */
+_T_
+    print O "    public $_\n";
+  } @SET;
+
+  print O "\n";
+
+  print O <<"_T_";
+    public long readFrom(UDF_RandomAccess f) throws IOException, UDF_Exception{
+	long rsize = 0;
+	preReadHook(f);
+_T_
+
+  map{
+    print O "\t$_;\n";
+  } @READ;
+  print O <<"_T_";
+	apply( );
+	postReadHook(f);
+	return rsize;
+    }
+_T_
+
+  print O "\n";
+
+  print O <<"_T_";
+    public long writeTo(UDF_RandomAccess f) throws IOException, UDF_Exception{
+	long wsize = 0;
+_T_
+  map{
+    print O "\t$_;\n";
+  } @WRITE;
+
+  print O <<"_T_";
+	return wsize;
+    }
+_T_
+
+  print O "\n";
+  print O <<_T_;
+    /**
+	XMLのノードを指定して読み込む。
+
+	\@param n 読み込み先ノード。
+    */
+    public void readFromXML(Node n) throws UDF_Exception{
+	preReadFromXMLHook(n);
+	NodeList nl = n.getChildNodes();
+
+	for(int i=0 ; i<nl.getLength() ; ++i){
+	    Node child = nl.item(i);
+	    if(child.getNodeType() != Node.ELEMENT_NODE)
+		continue;
+	    String name = child.getLocalName();
+	    if(false)
+		;
+_T_
+	    map{
+		print O "\t$_\n";
+	    } @READXML;
+
+	    print O <<"_T_";
+	    else{
+		System.err.println("Unknown XML tag:" + name);
+	    }
+	}
+	apply( );
+	postReadFromXMLHook(n);
+
+	//読んだら消す(もういらないので)
+	n.getParentNode().removeChild(n);
+    }
+$DEFAULT
+_T_
+
+  print O "\n";
+  print O <<_T_;
+    /**
+	複製する
+    */
+    public UDF_Element duplicateElement(){
+	$CLASS dup = new $CLASS(this, null, getName());
+	dup.setDefaultValue();
+	dup.duplicateHook(this);
+_T_
+  map{
+    print O "$_\n";
+  } @DUP;
+
+print O <<"_T_";
+
+	apply();
+
+	return dup;
+    }
+_T_
+
+  print O "\n";
+  print O <<_T_;
+    /**
+        子の UDF Element の Node を append しなおす。
+
+    */
+    private void apply( ) {
+
+	removeAllChildren();
+_T_
+	    map{
+		print O "\t$_\n";
+	    } @APPLY;
+
+print O <<"_T_";
+    }
+_T_
+
+  print O "\n";
+
+  print O qq'    public String getInfo(int indent){\n';
+  print O qq'\tString a = "";\n';
+  print O qq'\ta += UDF_Util.repeat(\' \', indent);\n';
+  map{
+    print O qq'\ta += $_.getInfo(indent + 1);\n';
+  } @VALLIST;
+  print O qq'      return a;\n';
+  print O qq'    }\n';
+
+  print O "    public void debug(int indent){\n";
+  print O "\tSystem.err.print(UDF_Util.repeat(' ', indent));\n";
+  print O qq'
+	String info = " gp=" + getGlobalPoint();
+	info += " pn=" + getElemPartRefNo();
+	info += " sn=" + getPartSubno();
+';
+  print O qq'\tSystem.err.println(getName() + ": (" + hashCode() + ")" + info);';
+  map{
+    print O "\t$_.debug(indent + 1);\n";
+  } @VALLIST;
+  print O "    }\n";
+
+  map{
+    print O "$_\n";
+  }@CODE;
+
+  print O "//begin:add your code here\n";
+  map{
+    print O "$_\n";
+  }@YOURCODE;
+  print O "//end:\n";
+
+  print O "};\n";
+
+  close O;
+}
+
+sub norm{
+  my $sym = shift @_;           #正規化名前その1
+  my $delspace = shift @_;
+
+  $sym =~ s/Descriptors?/Desc/g;
+  $sym =~ s/Volume/Vol/g;
+  $sym =~ s/Sequence/Seq/g;
+  $sym =~ s/Maximum/Max/g;
+  $sym =~ s/Minimum/Min/g;
+  $sym =~ s/Location/Loc/g;
+  $sym =~ s/Length/Len/g;
+  $sym =~ s/Implementation/Impl/g;
+  $sym =~ s/Partitions?/Part/g;
+  $sym =~ s/Attributes?/Attr/g;
+  $sym =~ s/Allocation/Alloc/g;
+  $sym =~ s/Position/Pos/g;
+  $sym =~ s/Identifier/Id/g;
+  $sym =~ s/Information/Info/g;
+  $sym =~ s/Characteristics/Char/g;
+  $sym =~ s/Character/Char/g;
+
+  $sym =~ s/^([A-Z])/lc("$1")/e;
+  $sym =~ s/ ([a-z])/uc(" $1")/eg;
+
+  if($delspace){
+    $sym =~ s/ //g;
+  }
+  else{
+    $sym =~ s/ +/\-/g;
+  }
+  return $sym;
+}

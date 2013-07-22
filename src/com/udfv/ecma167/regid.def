@@ -1,0 +1,25 @@
+%%com.udfv.ecma167
+%UDF_regid
+@A
+ECMA-167&nbsp;1/7.4&nbsp;Entity&nbsp;identifier&nbsp;を表現するクラス。
+
+@L
+Flags:uint8
+Identifier:bytes:23
+Identifier Suffix:bytes:8
+@
+
+#%UDF_regid_UDFIdSuffix
+#@L
+#UDF Revision:uint16
+#OS Class:uint8
+#OS Identifier:uint8
+#Reserved:bytes:4
+#@
+#
+#%UDF_regid_UDFDomainIdSuffix
+#@L
+#UDF Revision:uint16
+#Domain Flags:uint8
+#Reserved:bytes:5
+#@

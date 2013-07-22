@@ -1,0 +1,165 @@
+%%com.udfv.ecma119 ecma119
+
+%UDF_ECMA119_CD001_0
+@Abstract
+ECMA119/8.2で規定される Boot Recordを表現するクラス。
+@L
+Volume Descriptor Type:uint8
+Standard Identifier:bytes:5
+Volume Descriptor Version:uint8
+Boot System Identifier:bytes:32
+Boot Identifier:bytes:32
+Boot System Use:bytes:1977
+@
+
+%UDF_ECMA119_CD001_1
+@Abstract
+ECMA119/8.4で規定されるPrimary Volume Descriptorを表現するクラス。
+@L
+Volume Descriptor Type:uint8
+Standard Identifier:bytes:5
+Volume Descriptor Version:uint8
+Unused Field0:bytes:1
+System Identifier:bytes:32
+Volume Identifier:bytes:32
+Unused Field1:bytes:8
+Volume Space Size:uint32_lebe
+Unused Field2:bytes:32
+Volume Set Size:uint16_lebe
+Volume Sequence Number:uint16_lebe
+Logical Block Size:uint16_lebe
+Path Table Size:uint32_lebe
+Location of Occurence of Type L Path Table:uint32
+Location of Optional Occurence of Type L Path Table:uint32
+Location of Occurence of Type M Path Table:uint32_be
+Location of Optional Occurence of Type M Path Table:uint32_be
+Directory Record for Root Directory:ECMA119DirectoryRecord
+Volume Set Identifier:bytes:128
+Published Identifier:bytes:128
+Data Preparer Identifier:bytes:128
+Application Identifier:bytes:128
+Copyright File Identifier:bytes:37
+Abstract File Identifier:bytes:37
+Bibliographic File Identifier:bytes:37
+Volume Creation Date and Time:bytes:17
+Volume Modification Date and Time:bytes:17
+Volume Expiration Date and Time:bytes:17
+Volume Effective Date and Time:bytes:17
+File Structure Version:uint8
+Reserved:bytes:1
+Application Use:bytes:512
+Reserved2:bytes:653
+@
+
+%UDF_ECMA119_CD001_2
+@Abstract
+ECMA119/8.5で規定される Supplementary Volume Descriptorを表現するクラス。
+@Description
+UDFVライブラリでは現在 Supplementary Volume Descriptorに対応していないため、ボリューム中に存在しても正しく処理される保証はない。
+@L
+Volume Descriptor Type:uint8
+Standard Identifier:bytes:5
+Volume Descriptor Version:uint8
+Volume Flags:bytes:1
+System Identifier:bytes:32
+VolumeIdentifier:bytes:32
+Unused Field:bytes:8
+Volume Space Size:uint32_lebe
+Escape Sequences:bytes:32
+Volume Set Size:uint16_lebe
+Volume Sqeuence Number:uint16_lebe
+Logical Block Size:uint16_lebe
+Path Table Size:uint32_lebe
+Location of Occurence of Type L Path Table:uint32
+Location of Optional Occurence of Type L Path Table:uint32
+Location of Occurence of Type M Path Table:uint32_be
+Location of Optional Occurence of Type M Path Table:uint32_be
+Directory Record for Root Directory:ECMA119DirectoryRecord
+Volume Set Identifier:bytes:128
+Publisher Identifier:bytes:128
+Data Preparer Identifier:bytes:128
+Application Identifier:bytes:128
+Copyright File Identifier:bytes:37
+Abstract File Identifier:bytes:37
+Bibliographic File Identifier:bytes:37
+Volume Creation Date and Time:bytes:17
+Volume Modification Date and Time:bytes:17
+Volume Expiration Date and Time:bytes:17
+Volume Effective Date and Time:bytes:17
+File Structure Version:uint8
+Reserved:bytes:1
+Application Use:bytes:512
+Reserved2:bytes:653
+@
+
+%UDF_ECMA119_CD001_3
+@Abstract
+ECMA119/8.6で規定される Volume Partition Descriptorを表現するクラス。
+@Description
+UDFVライブラリでは現在 Volume Partition Descriptorに対応していないため、ボリューム中に存在しても正しく処理される保証はない。
+@L
+Volume Descriptor Type:uint8
+Standard Identifier:bytes:5
+Volume Descriptor Version:uint8
+Unused Field:bytes:1
+System Identifier:bytes:32
+Volume Partition Identifier:bytes:32
+Volume Partition Location:uint64
+Volume Partition Size:uint64
+System Use:bytes:1960
+@
+
+%UDF_ECMA119_CD001_255
+@Abstract
+ECMA119/8.3で規定される Volume Descriptor Set Terminator を表現するクラス。
+@L
+Volume Descriptor Type:uint8
+Standard Identifier:bytes:5
+Volume Descriptor Version:uint8
+Reserved:bytes:2041
+@
+
+%UDF_ECMA119DirectoryRecord
+@Abstract
+ECMA119/9.1で規定される Directory Record を表現するクラス。
+@L
+Length of Directory Record:uint8
+Extended Attribute Record Length:uint8
+Location of Extent:uint32_lebe
+Data Length:uint32_lebe
+Recording Date and Time:bytes:7
+File Flags:uint8
+File Unit Size:uint8
+Interleave Gap Size:uint8
+Volume Sequence Number:uint16_lebe
+Length of File Identifier:uint8
+File Identifier:bytes:getLenOfFileId().getIntValue()
+Padding Field:pad:2
+System Use:bytes:(getLenOfDirectoryRecord().getIntValue() - 33 - getFileId().getSize() - getPaddingField().getSize())
+@
+
+%UDF_ECMA119PathTable
+@Abstract
+ECMA119/9.4で規定される Directory Record を表現するクラス。
+@L
+Length of Directory Identifier:uint8
+Extended Attribute Record Length:uint8
+Location of Extent:uint32
+Parent Directory Number:uint16
+Directory Identifier:bytes:getLenOfDirectoryId().getIntValue()
+Padding Field:pad:2
+@
+
+%UDF_ECMA119PathTable_be
+@Abstract
+ECMA119/9.4で規定される Directory Record を表現するクラス。
+@Description
+UDF_ECMA119PathTable との違いは、データがビッグエンディアンで表現されているかどうかである。
+@L
+Length of Directory Identifier:uint8
+Extended Attribute Record Length:uint8
+Location of Extent:uint32_be
+Parent Directory Number:uint16_be
+Directory Identifier:bytes:getLenOfDirectoryId().getIntValue()
+Padding Field:pad:2
+@

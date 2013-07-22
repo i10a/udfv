@@ -1,0 +1,34 @@
+%%com.udfv.udf150
+
+%UDF_SparablePartMap UDF_PartMap
+@A
+Sparable&nbsp;Partition&nbsp;Map&nbsp;を表現するクラス。
+
+@L
+Partition Map Type:uint8
+Partition Map Length:uint8
+Reserved:bytes:2
+Partition Type Identifier:regid%base=com.udfv.ecma167
+Volume Sequence Number:uint16
+Partition Number:uint16
+Packet Length:uint16
+Number of Sparing Tables:uint8
+Reserved2:bytes:1
+Size of Each Sparing Table:uint32
+Locations of Sparing Tables:bytes:getNumberOfSparingTables().getIntValue()*4
+Pad:bytes:16-4*getNumberOfSparingTables().getIntValue()
+@
+
+%UDF_VirtualPartMap UDF_PartMap
+@A
+Virtual&nbsp;Partition&nbsp;Map&nbsp;を表現するクラス。
+
+@L
+Partition Map Type:uint8
+Partition Map Length:uint8
+Reserved:bytes:2
+Partition Type Identifier:regid%base=com.udfv.ecma167
+Volume Sequence Number:uint16
+Partition Number:uint16
+Reserved2:bytes:24
+@

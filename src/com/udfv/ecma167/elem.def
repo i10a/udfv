@@ -1,0 +1,83 @@
+%%com.udfv.ecma167
+
+%UDF_tag
+@A
+ECMA-167&nbsp;3/7.2&nbsp;Descriptor&nbsp;tag&nbsp;を表現するクラス。
+
+@L
+Tag Identifier:uint16
+Descriptor Version:uint16
+Tag Checksum:uint8
+Reserved:bytes:1
+Tag Serial Number:uint16
+Descriptor CRC:uint16
+Descriptor CRC Length:uint16
+Tag Location:uint32
+@
+
+#%UDF_timestamp
+#@A
+#ECMA-167&nbsp;1/7.3&nbsp;Timestamp&nbsp;を表現するクラス。
+#
+#@L
+#Type and Time Zone:uint16
+#Year:uint16
+#Month:uint8
+#Day:uint8
+#Hour:uint8
+#Minute:uint8
+#Second:uint8
+#Centiseconds:uint8
+#Hundreds of Microseconds:uint8
+#Microseconds:uint8
+#@
+
+####!!!!! regid.def に同じものがあります。
+%UDF_regid
+@A
+ECMA-167&nbsp;1/7.4&nbsp;Entity&nbsp;identifier&nbsp;を表現するクラス。
+
+@L
+Flags:uint8
+Identifier:bytes:23
+Identifier Suffix:bytes:8
+@
+
+%UDF_charspec
+@A
+ECMA-167&nbsp;1/7.2.1&nbsp;Character&nbsp;set&nbsp;specification&nbsp;を表現するクラス。
+
+@L
+Character Set Type:uint8
+Character Set Information:bytes:63:encoding=CS0_UDF
+@
+
+%UDF_PartHeaderDesc
+@A
+Partition&nbsp;Header&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Unallocated Space Table:short_ad
+Unallocated Space Bitmap:short_ad
+Partition Integrity Table:short_ad
+Freed Space Table:short_ad
+Freed Space Bitmap:short_ad
+Reserved:bytes:88
+@
+
+%UDF_LogicalVolHeaderDesc
+@A
+Logical&nbsp;Volume&nbsp;Header&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Unique Id:uint64
+Reserved:bytes:24
+@
+
+%UDF_PathComponent
+@L
+Component Type:uint8
+Length of Component Identifier:uint8
+Component File Version Number:uint16
+Component Identifier:bytes:getLenOfComponentId().getIntValue()
+@

@@ -1,0 +1,87 @@
+%%com.udfv.ecma167
+
+%UDF_ECMA167_BEA01
+//
+// BEA01
+//
+@A
+Beginning&nbsp;Extended&nbsp;Area&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Structure Type:uint8
+Standard Identifier:bytes:5:default="BEA01"
+Structure Version:uint8::default=1
+Structure Data:bytes:2041
+@
+
+%UDF_ECMA167_TEA01
+//
+// TEA01
+//
+@A
+Terminating&nbsp;Extended&nbsp;Area&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Structure Type:uint8
+Standard Identifier:bytes:5:default="TEA01"
+Structure Version:uint8::default=1
+Structure Data:bytes:2041
+@
+
+%UDF_ECMA167_NSR02
+//
+// NSR02
+//
+@A
+NSR&nbsp;Descriptor&nbsp;を表現するクラス。
+
+<em>
+ECMA-167&nbsp;2nd&nbsp;Edition&nbsp;の定義。
+</em>
+
+@L
+Structure Type:uint8
+Standard Identifier:bytes:5:default="NSR02"
+Structure Version:uint8::default=1
+Reserved:bytes:1
+Structure Data:bytes:2040
+@
+
+%UDF_ECMA167_NSR03
+//
+// NSR03
+//
+@A
+NSR&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Structure Type:uint8
+Standard Identifier:bytes:5:default="NSR03"
+Structure Version:uint8::default=1
+Reserved:bytes:1
+Structure Data:bytes:2040
+@
+
+%UDF_ECMA167_BOOT2
+//
+// BOOT2
+//
+@A
+Boot&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Structure Type:uint8
+Standard Identifier:bytes:5:default="BOOT2"
+Structure Version:uint8::default=1
+Reserved:bytes:1
+Architecture Type:regid
+Boot Identifier:regid
+Boot Extent Location:uint32
+Boot Extent Length:uint32
+Load Address:uint64
+Start Address:uint64
+Descriptor Creation Date and Time:timestamp
+Flags:uint16
+Reserved2:bytes:32
+Boot Use:bytes:1906
+@

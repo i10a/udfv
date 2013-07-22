@@ -1,0 +1,247 @@
+#!/usr/bin/perl
+
+use Text::Iconv;
+
+print qq'<?xml version="1.0"?>
+<hwk:doc xmlns:hwk="http://udfv.com/hwk/">\n';
+
+my $CONVERTER = Text::Iconv->new("EUC-JP", "UTF-8");
+
+my $p;
+
+my $itemize;
+my $pre;
+my $text;
+my $group;
+my $chap;
+
+my @index;
+
+my @chapno = (0, 0, 0);
+my @appendix = (0, 0);
+
+while(<>){
+  chomp;
+  if(m'^//'){
+	next;
+  }
+  $_ = $CONVERTER->convert($_);
+
+  if(/^(\=+)\s*[\d\.]+\s*/){	# = で始まる行は chapterである
+    my $chap = $';
+    my $len = length($1);	# =の数
+
+    $chap = &escape($chap);
+    &close_p;
+    &close_text;
+    &close_chap;
+    &close_group;
+    &open_group("hwk:main-doc");
+    if($len == 1){
+      $chapno[0]++;
+      $chapno[1] = 0;
+      $chapno[2] = 0;
+      &open_chap('hwk:chaptor');
+      print qq'<hwk:chapno>$chapno[0]</hwk:chapno>\n';
+      print qq'<hwk:title>$chap</hwk:title>\n';
+      &open_text;
+
+      push(@index, "$chapno[0] $chap");
+    }
+    elsif($len == 2){
+      $chapno[1]++;
+      $chapno[2] = 0;
+      &open_chap('hwk:section');
+      print qq'<hwk:chapno>$chapno[0].$chapno[1]</hwk:chapno>\n';
+      print qq'<hwk:title>$chap</hwk:title>\n';
+      &open_text;
+      push(@index, "$chapno[0].$chapno[1] $chap");
+    }
+    elsif($len == 3){
+      $chapno[2]++;
+      &open_chap('hwk:subsection');
+      print qq'<hwk:chapno>$chapno[0].$chapno[1].$chapno[2]</hwk:chapno>\n';
+      print qq'<hwk:title>$chap</hwk:title>\n';
+      &open_text;
+
+      push(@index, "$chapno[0].$chapno[1].$chapno[2] $chap");
+    }
+    elsif($len == 4){
+      $chapno[3]++;
+      &open_chap('hwk:subsection');
+      print qq'<hwk:chapno>$chapno[0].$chapno[1].$chapno[2].$chapno[3]</hwk:chapno>\n';
+      print qq'<hwk:title>$chap</hwk:title>\n';
+      &open_text;
+
+      push(@index, "$chapno[0].$chapno[1].$chapno[2] $chap");
+    }
+    next;
+  }
+  elsif(/^= Appendix \w/){		# = \w で始まる行は付録
+    &close_p;
+    &close_text;
+    &close_chap;
+    &close_group;
+    &open_group("hwk:appendix-doc");
+
+    my $title = $';
+    $appendix[0]++;
+
+    $appendix = sprintf("%c", 0x40 + $appendix[0]);
+
+    &close_chap;
+    &open_chap('hwk:appendix');
+    print qq'<hwk:chapno>$appendix</hwk:chapno>\n';
+    print qq'<hwk:title>$title</hwk:title>\n';
+    &open_text;
+    next;
+  }
+  elsif(/^\-{10}/){		# - が10個異常ある場合はフォーマット済みテキスト
+    $_ = undef;
+    if($pre){
+      &close_p;
+    }
+    elsif(!$pre){
+      &close_p;
+      open_p('hwk:pre');
+      $pre = 1;
+    }
+  }
+  elsif(/^\- /){			# - が1つは箇条書きリスト
+    if(!$itemize){
+      &close_p;
+      open_p('hwk:ul');
+      $itemize = 1;
+    }
+  }
+  elsif(/^\-# /){			# -# は数字つき箇条書きリスト
+    if(!$itemize){
+      &close_p;
+      open_p('hwk:ol');
+      $itemize = 1;
+    }
+  }
+  elsif(/^\s*$/){		# 空行
+    if($p eq "hwk:pre"){
+      $pre_text .= "\n";
+    }
+    else{
+      &close_p;
+    }
+    next;
+  }
+
+  if($itemize){
+    if(/^\-#? /){	#-で始まる行は <li>を挿入してテキストを足す
+      my $li = $';
+      $itemize_text .= ('<hwk:li>' . &escape($li) . '</hwk:li>');
+    }
+    else{	#そうでない場合は継続行である。最後の </hwk:li>をけずって足す
+      my $li = $_;
+      $li =~ s/^\s//;
+      $itemize_text =~ s/<\/hwk:li>$//;
+      $itemize_text .= &escape($li) . '</hwk:li>';
+    }
+  }
+  elsif($pre){
+    $pre_text .= &escape($_) . "\n";
+  }
+  else{
+    open_p('hwk:p');
+    print &escape($_);
+  }
+}
+&close_p;
+&close_text;
+&close_chap;
+&close_group;
+
+print qq'<hwk:index>';
+foreach $i (@index){
+  print qq'<hwk:indexitem>$i</hwk:indexitem>\n';
+}
+print qq'</hwk:index>';
+
+print qq'</hwk:doc>\n';
+
+
+sub escape{
+  my $in = shift;
+
+  $in =~ s/&/&amp;/g;
+  $in =~ s/</&lt;/g;
+  $in =~ s/>/&gt;/g;
+
+  return $in;
+}
+
+sub close_p{
+  if($itemize){
+    print $itemize_text;
+    $itemize_text = undef;
+    $itemize = undef;
+  }
+  if($pre){
+    $pre_text =~ s/\n//;
+    print $pre_text;
+    $pre_text = undef;
+    $pre = undef;
+  }
+  if($p){
+    print "</$p>";
+  }
+  $p = undef;
+}
+
+sub open_p{
+  my $arg = shift;
+  if(!$p){
+    $p = $arg;
+    print "<$p>\n";
+  }
+}
+
+sub close_group {
+  if($group){
+    print "</$group>";
+  }
+  my $group = undef;
+}
+
+sub open_group {
+  my $g = shift;
+  print "<$g>";
+  $group = $g;
+}
+
+sub close_chap{
+  if($chap){
+    print "</$chap>";
+  }
+  $chap = undef;
+}
+
+sub open_chap{
+  my $c = shift;
+  if($chap){
+    print "</$chap>";
+  }
+  print "<$c>";
+  $chap = $c;
+}
+
+sub close_text{
+  if($text){
+    print "</$text>";
+  }
+  $text = undef;
+}
+
+sub open_text{
+  my $t = 'hwk:text';
+  if($text){
+    print "</$text>";
+  }
+  print "<$t>";
+  $text = $t;
+}

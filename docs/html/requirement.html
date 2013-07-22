@@ -1,0 +1,79 @@
+<html xmlns:hwk="http://udfv.com/hwk/">
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>UDFV Document</title>
+<link href="udfv.css" rel="stylesheet">
+</head>
+<body>
+<h1 class="banner">UDFV Document</h1>
+<div align="right">
+(C) 2005 Heart Solutions, Inc.
+</div>
+<div class="chaptor">
+<h1>1. 動作環境</h1>
+<p>
+UDFVライブラリを使用するためには、以下の環境が必要です。</p>
+<ul>
+<li>Java(TM)アプリケーションを動作させることができる J2SE v 1.4.2 以降の環境。</li>
+</ul>
+<p>
+    J2SE Software Development Kit(SDK) v 1.4.2 もしくは    J2SE Java(TM) Runtime Environment (JRE) v 1.4.2 </p>
+<p>
+    Java 2 Platform, Standard Edition v 1.4.2 (J2SE) のダウンロードページ。      http://java.sun.com/j2se/1.4.2/ja/download.html</p>
+<p>
+J2SE SDKやJ2SE JREのインストールについては Sun の Web ページをご覧ください。</p>
+<ul>
+<li>'THE APACHE XML PROJECT'が提供している Java 2 用 XML パーサーライブラリ。 またはそれに準じるもの。</li>
+</ul>
+<p>
+    'THE APACHE XML PROJECT'の Xerces2 Java Parser の Web ページ。      http://xml.apache.org/xerces2-j/</p>
+<p>
+現時点(2005/05/02)での最新バージョンは Xerces2 Java Parser 2.6.2 Release です。なお、Xerces ライブラリに関しては、配布パッケージに同梱されています。</p>
+</div>
+<div class="section">
+<h2>1.1. Fedora Core 3</h2>
+<p>
+Fedora Core 3での環境構築の方法を解説します。</p>
+</div>
+<div class="section">
+<h3>1.1.1. Fedora Core 3のインストール</h3>
+<p>
+「インストールの種類」では「ワークステーション」を選択します。</p>
+<p>
+「パッケージインストールのデフォルト」で「インストールするソフトウェアをカスタマイズ」を選択し、「パッケージグループの選択」画面へ移行します。「開発ツール」の詳細を選択後に開く「開発ツールの詳細」ダイアログから、gcc-java のチェックボックスのチェックを外してください。</p>
+<p>
+インストールに関するその他の情報は適宜設定して構いません。</p>
+<p>
+インストール後、全てroot権限で以下の処理を行います。</p>
+</div>
+<div class="section">
+<h3>1.1.2. Java SDK</h3>
+<p>
+http://java.sun.com/j2se/1.4.2/download.html から「Download J2SE SDK」を選択します。</p>
+<p>
+ライセンス条項に同意し、「RPM in self-extracting file  (j2sdk-1_4_2_08-linux-i586-rpm.bin,33.64MB) 」からj2sdk-1_4_2_08-linux-i586-rpm.binをダウンロードして下さい。</p>
+<p>
+ダウンロードが完了したら、以下のように入力し、Java SDKをインストールします。</p>
+<pre>
+% chmod u+x j2sdk-1_4_2_08-linux-i586-rpm.bin
+% ./j2sdk-1_4_2_08-linux-i586-rpm.bin
+% rpm -Uvh j2sdk-1_4_2_08-linux-i586.rpm
+</pre>
+<p>
+
+</p>
+</div>
+<div class="section">
+<h3>1.1.3. 環境変数の設定</h3>
+<p>
+以下のように環境変数を設定してください。</p>
+<pre>
+% export JAVA_HOME=/usr/java/j2sdk1.4.2_08
+% export PATH=${JAVA_HOME}/bin:${PATH}:${ANT_HOME}/bin
+</pre>
+<p>
+
+</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,805 @@
+<html xmlns:hwk="http://udfv.com/hwk/">
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>UDFV Document</title>
+<link href="udfv.css" rel="stylesheet">
+</head>
+<body>
+<h1 class="banner">UDFV Document</h1>
+<div align="right">
+(C) 2005 Heart Solutions, Inc.
+</div>
+<div class="chaptor">
+<h1>1. Frontend tools</h1>
+</div>
+<div class="section">
+<h2>1.1. Frontendのコンセプト</h2>
+<p>
+  Frontendは、ディスクイメージファイルおよびXMLドキュメントファイルに対し、対話型で様々な操作を行うためのツールで、既存のイメージファイルまたは XMLの編集を支援するためのツールです。</p>
+<p>
+  FrontendはUDFをある程度理解している人が操作することを前提とし、「あくまでイメージを編集する」ことを主体としています。このため、ある程度のことは自動で行いますが、それ以外はオペレータが明示的に指定しなければなりません。</p>
+<p>
+例えば、Frontendは ファイルを追加して Directory Recordが溢れた際に自動でサイズを増やす等の処理をしません。このような処理をする際は、先にオペレータが Directoryのサイズを増やし、その後にファイルを追加する必要があります。</p>
+<p>
+また、ファイルを作成する際も、ファイルエントリの作成、サイズ変更、データの追加といった三段階の作業を全て明示的に指定してやらなければなりません。</p>
+<p>
+このような実装は不便ではありますが、逆を言えば、Frontendで操作をすることにより間違ったファイルシステムをも作ることも可能で、テスト用イメージを作成するときには逆に利点となります。</p>
+<p>
+一方、いくつかの作業はFrontendが自動で行います。</p>
+<p>
+例えば、File Systemにファイルを作成する、ディレクトリを作成する等は、空き領域を自動的に探してくれるため、領域の割り当て等を明示的にする必要はありません。また、File Entryや File Identifierの regidなども正しく設定されます。</p>
+<p>
+この明示的な割り当ては、UDF_Policyインターフェース(現在のところ非公開)を実装したクラスにより実装されています。Frontendはこの割り当てポリシーを変更すれば、割り当てのルールをも変更できる柔軟な設計となっています。</p>
+</div>
+<div class="section">
+<h2>1.2. Frontendの実行</h2>
+<p>
+以下のように実行します。</p>
+<pre>
+例)
+  &gt; java -Xmx64m -cp ./udfv.jar com.udfv.test.Frontend
+</pre>
+<p>
+
+</p>
+<p>
+上記を実行すると、コマンド受付状態になり、標準入力からのコマンドを受けつけることができるようになります。</p>
+</div>
+<div class="section">
+<h2>1.3. Frontendの使用方法</h2>
+<p>
+Frontendの基本的な流れは次のようになります。</p>
+<ol>
+<li>初期化をする</li>
+<li>各インスタンスの生成</li>
+<li>イメージファイルまたはXMLを読みこむ</li>
+<li>操作をする</li>
+<li>終了する</li>
+</ol>
+<p>
+ただし、初期化、各インスタンスの生成は後述する readImage / readXMLを使用する場合省略することもできます。</p>
+</div>
+<div class="section">
+<h2>1.4. 実行例</h2>
+<p>
+サンプルとして</p>
+<ol>
+<li>test.imgという UDFイメージファイルを読みこみ、</li>
+<li>/XYZW、/ABCDというファイルを作成し、</li>
+<li>/ABCDを1024バイトにする。</li>
+<li>その後 SpaceBitmapやchecksumを計算し、</li>
+<li>XMLを出力する。</li>
+</ol>
+<p>
+を下記に示します。</p>
+<pre>
+readImage test.img
+mkfile /8:XYZW 
+mkfile /8:ABCD 
+resize /8:ABCD 1024
+recalc
+outputXML
+displayTree
+quit
+</pre>
+<p>
+
+</p>
+<p>
+上記コマンドを実行すると、test.imgというUDF Imageの Root Directoryに XYZWというファイルおよび、ABCDというファイルが作成され、ABCDのファイルの長さが 1024バイトになります。</p>
+<p>
+その後 recalcで CRCや SpaceBitmapを計算しなおし、XMLを出力し、test.imgのファイル構造を表示し、終了します。</p>
+</div>
+<div class="section">
+<h2>1.5. Frontendのオプション</h2>
+<p>
+Frontend では、共通オプションの他に以下のオプションが指定できます。</p>
+<pre>
+ -in &lt;input image file&gt;
+
+ readImageでイメージファイル名を省略したときのイメージファイル名
+
+ -out &lt;output image file&gt;
+
+ outputImageでイメージファイル名を省略したときのイメージファイル名
+
+ -inxml &lt;input XML file&gt;
+
+ readXMLでXMLファイル名を省略したときのXMLファイル名
+
+ -outxml &lt;output XML file&gt;
+
+ outputXMLでXMLファイル名を省略したときのXMLファイル名
+
+</pre>
+<p>
+
+</p>
+</div>
+<div class="section">
+<h2>1.6. Frontendにおけるファイル名の指定</h2>
+<p>
+UDFでは OSTA Compressed Unicodeとしてファイル名を書くことが定められており、8、16、254、255の4つの compression idが用意されています。</p>
+<p>
+どの compression idで名前をエンコードするのかは Frontendでは、明示的に示してやらねばなりません。ファイル名は</p>
+<p>
+「&lt;compression id&gt;:ファイル名」</p>
+<p>
+のように表わします。例えば、</p>
+<p>
+8:ABCD</p>
+<p>
+はバイナリでは、</p>
+<p>
+08 41 42 43 44</p>
+<p>
+16:ABCD </p>
+<p>
+はバイナリでは、</p>
+<p>
+10 00 41 00 42 00 43 00 44</p>
+<p>
+となります。現在のところ Frontendで操作をする際に、compression idを指定しないでファイルを指定することはできません。</p>
+<p>
+また、compression idが254、255は Deleted bitが立っているときに使用するファイル名ですが、Frontendは compression idに 254、 255を指定しても Delete bitを明示的に立てるということを行いません。</p>
+<p>
+このような特殊なデータを作成したい時は、FrontendでXMLを生成した後、XMLを手動で修正するということになります。</p>
+</div>
+<div class="section">
+<h2>1.7. Frontendにおける数値の指定</h2>
+<p>
+Frontendでは 引数に数値を書くところで簡単な式を書くことができます。</p>
+<pre>
+加減乗除(通常の演算規則に従います)
+
+10+30		=&gt; 40
+50-20		=&gt; 30
+30+20*3		=&gt; 90
+(30+20)*3	=&gt; 150
+
+16進数
+0x345		=&gt; 837
+
+キロ、メガ、ギガ
+30K		=&gt; 30*1024
+30M		=&gt; 30*1024*1024
+30G		=&gt; 30*1024*1024*1024
+
+変数(非公開)
+${name}		=&gt; Frontendクラス内のfield変数で&lt;name&gt;があればその値
+		=&gt; 無ければ UDF_ElementBase内の field変数で&lt;name&gt;があればその値
+
+なお計算式においてスペースは入れることができません。
+
+</pre>
+</div>
+<div class="section">
+<h2>1.8. Frontend 通常コマンド一覧</h2>
+<p>
+Frontendコマンド受付状態で使用できるコマンドは以下の通りです。コマンドラインの引数はスペースで区切ります。コマンドの大文字小文字の違いは無視します。</p>
+<p>
+現在スペースを含む文字列を引数で指定することはできません。</p>
+</div>
+<div class="section">
+<h3>1.8.1. イメージ読みこみ/書き出し関連</h3>
+<pre>
+  readImage [&lt;input file&gt;]
+
+  既存のイメージファイルを読み込みます。
+  input fileには読み込むイメージファイルを指定します。
+
+  ファイル名を省略した場合は -in オプションで指定されたファイルを読みこみます。
+</pre>
+<p>
+
+</p>
+<pre>
+  readXML [&lt;input XML file&gt;]
+
+  既存のXMLドキュメントファイルを読み込みます。
+  input XML fileには読み込むXMLファイルを指定します。
+
+  ファイル名を省略した場合は -inxml オプションで指定されたファイルを読みこみます。
+
+</pre>
+<p>
+
+</p>
+<pre>
+  OutputImage [&lt;output image file&gt;]
+
+  現在編集中のイメージおよびXMLファイルをイメージファイルとして出力します。
+  output image fileには出力するファイル名を指定します。
+
+  ファイル名を省略した場合は -out オプションで指定されたファイルに書き出します。
+</pre>
+<p>
+
+</p>
+<pre>
+  OutputXML [&lt;output XML file&gt;]
+
+  現在編集中のイメージおよびXMLファイルをXMLドキュメントファイルとして出力します。
+  output XML fileには出力するファイル名を指定します。
+
+  ファイル名を省略した場合は -outxml オプションで指定されたファイルに書き出します。
+</pre>
+<p>
+
+</p>
+</div>
+<div class="section">
+<h3>1.8.2. ファイル操作関連</h3>
+<pre>
+  mkdir &lt;path&gt; &lt;ad type&gt;
+
+  ディレクトリを作成します。
+  pathは絶対パスで指定してください。
+
+  Frontendは Policyにしたがって空き領域を自動で探し、そこに必要なFEやFIDを割り当てます。
+  その際、FIDが増え、Directoryサイズを広げる必要がある場合でも Frontendは自動で広げません。
+  そのような作業をする場合、オペレータが前もってDirectoryサイズを resizeで広げておく必要が
+  あります。
+
+  ad typeには、ECMA167 4/14.14.1.1で定義されるタイプを指定します。
+  0〜3が指定可能です。
+</pre>
+<p>
+
+</p>
+<pre>
+  mkfile &lt;path&gt; [&lt;ad type&gt;]
+
+  ファイルを作成します。
+  pathは絶対パスで指定してください。
+
+  Frontendは Policyにしたがって空き領域を自動で探し、そこに必要なFEやFIDを割り当てます。
+  その際、FIDが増え、Directoryサイズを広げる必要がある場合でも Frontendは自動で広げません。
+  そのような作業をする場合、オペレータが前もってDirectoryサイズを resizeで広げておく必要が
+  あります。
+
+  作成されたファイルのサイズは0になります。
+
+  ad typeには、ECMA167 4/14.14.1.1で定義されるタイプを指定します。
+  0〜3が指定可能です。省略した場合、0が設定されます。
+</pre>
+<p>
+
+</p>
+<pre>
+  resize &lt;path&gt; &lt;new size&gt;
+
+  ファイルまたはディレクトリのサイズを変更します。
+  pathは絶対パスで指定してください。
+
+  new sizeには変更後のサイズをバイトで指定します。
+
+  FrontendはPolicyにしたがって空き領域を自動で探し、そこにファイルのデータ領域を割り当て、
+  割り当てた領域は FEの ADリストの最後のADを調整することにより行われます。
+
+  広げた部分のファイルの中身は全て0x00となります。
+
+  ファイルにデータを書く場合は AttachDataToFileを使用します。
+
+</pre>
+<p>
+
+</p>
+<pre>
+  ChangeADType &lt;file&gt; &lt;type&gt;
+
+  fileで指定されたファイルのADのタイプを変更します。
+  typeには、ECMA167 4/14.14.1.1で定義されるタイプを指定します。
+  0〜3が指定可能です。
+
+注意
+ファイルタイプを 3(immediate)にして、FileEntryのサイズが2048バイトを越えたとしても
+Frontendはエラーとしません。
+</pre>
+<p>
+
+</p>
+<pre>
+  Realloc &lt;file&gt;
+
+  Policyに従いファイル領域の再割り当てを行います。
+  断片化したファイルは連続した領域になります。
+
+</pre>
+<p>
+
+</p>
+<pre>
+  ChainAllocDesc &lt;file&gt;
+
+  fileで指定されたファイルのADリストの最後にタイプ3のADを付加し、
+  そのADで指定されている領域にAllocation Extent Descriptorを作成します。
+
+  AEDの領域はPolicyにしたがって適当な空いている場所に確保されます。
+
+  このコマンドを実行した直後は、新たに作成されたAED内にはADは1つも記録されていません。
+
+例えば、以下のような構成になっているFEがあった場合
+
++----+         +----+
+|FE  |         |AED |
++----+         +----+
+|AD0 |   +--&gt;  |AD3 |
++----+   |     +----+
+|AD1 |   |     |AD4 |
++----+   |     +----+
+|FLG3| --+
++----+
+
+以下のようになります。
+
++----+         +----+         +----+
+|FE  |   +--&gt;  |AED |   +--&gt;  |AED |
++----+   |     +----+   |     +----+
+|AD0 |   |     |AD2 |   |
++----+   |     +----+   |
+|AD1 |   |     |AD3 |   |
++----+   |     +----+   |
+|FLG3| --+     |FLG3| --+
++----+         +----+
+
+次に resize等でサイズを広げるときは最後の AEDを操作することになります。
+
+</pre>
+<p>
+
+</p>
+<pre>
+  UnchainAllocDesc &lt;file&gt;
+
+  fileで指定されたファイルのADを全て調べ、
+  一番最後にあるAllocation Extent Descriptorとその領域を指しているタイプ3のADを削除します。
+
+  削除されたAED内に記録されているADは、全て直前のADリスト内に移動して記録されます。
+  移動の結果直前のFEまたはAEDが2048バイトを超過するかもしれませんが、Frontendではその
+  チェックをしません。
+
+  ファイルにAEDが1つも存在しない場合は何も行いません。
+
+例えば、以下のような構成になっているFEがあった場合
+
++----+         +----+         +----+
+|FE  |   +--&gt;  |AED |   +--&gt;  |AED |
++----+   |     +----+   |     +----+
+|AD0 |   |     |AD2 |   |     |AD4 |
++----+   |     +----+   |     +----+
+|AD1 |   |     |AD3 |   |     |AD5 |
++----+   |     +----+   |     +----+
+|FLG3| --+     |FLG3| --+
++----+         +----+
+
+以下のようになります。
+
++----+         +----+
+|FE  |   +--&gt;  |AED |
++----+   |     +----+
+|AD0 |   |     |AD2 |
++----+   |     +----+
+|AD1 |   |     |AD3 |
++----+   |     +----+
+|FLG3| --+     |AD4 |
++----+         +----+
+               |AD5 |
+               +----+
+</pre>
+<p>
+
+</p>
+<pre>
+  Remove &lt;file&gt;
+
+  fileで指定されたファイルまたはディレクトリを削除します。
+</pre>
+<p>
+
+</p>
+<pre>
+  Rename &lt;file1&gt; &lt;file2&gt;
+
+  file1で指定されるファイルまたはディレクトリの名前をfile2へと変更します。
+</pre>
+<p>
+
+</p>
+<pre>
+  Chflag &lt;file&gt; &lt;flag&gt;
+
+  ECMA167 4/14.6.8で定義される、ICB tagのFlagsの値を変更します。
+  fileには値を変更するファイルを指定します。
+  flagにはFlags値を指定します。
+</pre>
+<p>
+
+</p>
+<pre>
+  Chown &lt;file&gt; &lt;uid&gt;
+
+  ファイルのOwner IDを変更します。
+  fileには値を変更するファイルを指定します。
+  uidにはUID値を指定します。
+</pre>
+<p>
+
+</p>
+<pre>
+  Chgrp &lt;file&gt; &lt;gid&gt;
+
+  ファイルのGroup IDを変更します。
+  fileには値を変更するファイルを指定します。
+  gidにはGID値を指定します。
+</pre>
+<p>
+
+</p>
+<pre>
+  AttachDataToFile &lt;UDF file&gt; &lt;data file&gt;
+
+  data fileで指定される外部ファイルのデータを、
+  UDFファイルシステム内に存在しているファイルのデータとしてコピーします。
+  UDF fileにはUDFファイルシステム内のファイル名を絶対パスで指定します。
+  data fileにはUDF fileのデータとなるファイルを指定します。
+
+  data fileがUDF fileより大きい場合は、UDF fileのサイズへと調整されます。
+</pre>
+<p>
+
+</p>
+<pre>
+  AppendAllocDesc &lt;file&gt;
+
+  内部で保持しているADリストをfileに追加します。
+
+  このADリストは@resetAD、@addAD、@allocAndAddAD等を使用してあらかじめ作成して
+  おく必要があります。
+</pre>
+<p>
+
+</p>
+<pre>
+  RemoveAllocDesc &lt;file&gt;
+
+  fileからADリストを削除します。
+  削除するADリストは、@resetAD、@addAD、@allocAndAddAD等を使用してあらかじめ
+  作成しておく必要があります。
+</pre>
+<p>
+
+</p>
+<pre>
+  ReplaceAllocDesc &lt;file&gt;
+
+  fileのADを内部で保持しているADリストと入れ替えます。
+  このADリストは@resetAD、@addAD、@allocAndAddAD等を使用してあらかじめ作成して
+  おく必要があります。
+</pre>
+<p>
+
+</p>
+</div>
+<div class="section">
+<h3>1.8.3. デバッグ関連</h3>
+<pre>
+  Help
+
+  ヘルプを表示します。
+</pre>
+<p>
+
+</p>
+<pre>
+  SetDebugLevel &lt;debug_level&gt;
+
+  デバッグレベルを設定します。
+  デバッグレベルは0〜10の値を指定できます。
+  デバッグレベルを高くすると、表示されるデバッグメッセージが多くなります。
+</pre>
+<p>
+
+</p>
+<pre>
+  DisplayTree
+
+  現在のディレクトリ構造の一覧を表示します。
+</pre>
+<p>
+
+</p>
+<pre>
+  Verify
+
+  現在のイメージまたはXMLの検証を行います。
+</pre>
+<p>
+
+</p>
+</div>
+<div class="section">
+<h3>1.8.4. 特殊なもの</h3>
+<pre>
+  Loop &lt;n&gt; &lt;command&gt; &lt;command args&gt;
+
+  commandで指定されるコマンドをn回繰り返して実行します。
+</pre>
+<p>
+
+</p>
+<pre>
+  CreatePolicy [&lt;class&gt;]
+
+  classで指定されるポリシーを作成します。
+
+  ポリシーとは、Frontendでファイル操作を行う際に、
+  その動作の基準となる指標をまとめたものです。
+
+  例えば、ファイルを作成した際などに、
+  新たに作成されたFile EntryにはImplementation IDを指定する必要がありますが、
+  この値は環境によって異なるものであり、Frontendでは判断できません。
+
+  このImplementation IDのような、環境依存、外部から指定されなければ
+  決定できないような挙動・値などをまとめたものをポリシーとして定義しています。
+  UDF_Policyをimplementsすることで、新たなポリシーを作成することができます。
+
+  classを省略した場合はデフォルトのポリシーを作成します。
+
+※現在ではデフォルトのポリシーしか作成できません。
+</pre>
+<p>
+
+</p>
+<pre>
+  SetVolumePolicy &lt;class&gt;
+
+  ボリューム作成ポリシーを設定します。
+
+※現在ではデフォルトのポリシーしか作成できません。
+</pre>
+<p>
+
+</p>
+<pre>
+  resizePartMap &lt;partmapno&gt; &lt;new size&gt;
+
+  パーティションマップのサイズを変更します。
+  partmapnoには、パーティションマップ番号を指定します。
+  new sizeには変更後のサイズをバイトで指定します。
+</pre>
+<p>
+
+</p>
+<pre>
+  recalc [&lt;type&gt;]
+
+  内部に保持している様々な値・構造を再計算・再構成します。
+  typeで再計算する項目を指定することができます。
+  typeに指定できる項目は以下の通りです。
+
+  1   CRCおよびチェックサム
+  2   リファレンス(XMLのref属性)
+  3   Descriptor TagのTag Locationの値
+  4   GP(Global Point:先頭からの絶対位置)
+  5   verifyを行うのに必要な様々な情報
+  6   ディレクトリ構造
+  7   Space Bitmapのbitmap(Metadata Bitmapを含む)
+  8   UDF_Extentの終端のUDF_padのサイズとデータ
+  9   (Extended) File EntryとFile Identifierの関連
+  10  VDS、LVIS、FSDSの構成
+  11  Partition Mapの構成
+  12  Logical Volume Integrity DescriptorのFree Space Tableの値
+  13  VDS（だけ）の構成
+
+  typeを省略した場合、1、2、3、4、7、8、12 の再計算を行います。
+</pre>
+<p>
+
+</p>
+<pre>
+  readFile &lt;file&gt; &lt;output file&gt;
+
+  UDFファイルシステム内に存在しているファイルを読み出し、ファイルに保存します。
+  fileには、UDFファイルシステム内のファイルを絶対パスで指定します。
+  output fileには、保存するファイル名を指定します。
+</pre>
+<p>
+
+</p>
+<pre>
+  Quit
+
+  Frontendを終了します。
+</pre>
+<p>
+
+</p>
+<pre>
+  IncPartMapSubno &lt;partmapno&gt;
+
+  パーティションマップ副番号をインクリメントします。
+
+※ 現在このこのコマンドは機能していません。
+</pre>
+<p>
+
+</p>
+</div>
+<div class="section">
+<h3>1.8.5. Frontend その他のコマンド</h3>
+<pre>
+  @resetAD
+
+  内部で保持しているADリストを全て削除します。
+  このリストは、通常コマンドAppendAllocDesc等で使用されます。
+</pre>
+<p>
+
+</p>
+<pre>
+  @addAD &lt;size&gt; &lt;type&gt; &lt;lbn&gt; &lt;partno&gt;
+
+  内部で保持しているADリストにADを追加します。
+  このリストは、通常コマンドAppendAllocDesc等で使用されます。
+
+  sizeには、ADのExtent Lengthを指定します。
+  typeには、どのADを作成するかを指定します。typeの値と対応するADは以下の通りです。
+
+  0   Short Allocation Descriptor
+  1   Long Allocation Descriptor
+  2   Extended Allocation Descriptor
+
+  lbnには、ADのExtent Position(Location)を指定します。
+
+  partnoには、Extent LocationのPartition Reference Numberを指定します。
+  Short ADを作成する場合は、Short ADが記録されている
+  Partition Reference Numberを指定してください(通常は0)。
+</pre>
+<p>
+
+</p>
+<pre>
+  @allocAndAddAD &lt;size&gt; &lt;type&gt; &lt;lbn&gt; &lt;partno&gt; &lt;align&gt;
+
+  内部で保持しているADリストにADを追加します。
+  また、ADで示される領域の確保を行います。
+  このリストは、通常コマンドAppendAllocDesc等で使用されます。
+
+  sizeには、ADのExtent Lengthを指定します。
+  typeには、どのADを作成するかを指定します。typeの値と対応するADは以下の通りです。
+
+  0   Short Allocation Descriptor
+  1   Long Allocation Descriptor
+  2   Extended Allocation Descriptor
+
+  lbnには、ADのExtent Position(Location)を指定します。
+
+  partnoには、Extent LocationのPartition Reference Numberを指定します。
+  Short ADを作成する場合は、Short ADが記録されている
+  Partition Reference Numberを指定してください(通常は0)。
+
+  alignには、確保する領域のalignサイズを指定します。
+</pre>
+<p>
+
+</p>
+</div>
+<div class="section">
+<h3>1.8.6. Frontend プラグイン一覧</h3>
+<p>
+Frontendプラグインとは、ファイルを作る・削除するといった単一のコマンドでは実現できない、より複雑な一連の手続きをまとめたコマンドです。</p>
+<p>
+プラグインを実行する場合は、Frontendコマンド受付状態でコマンドのかわりにフルパスでクラス名を入力します。</p>
+<pre>
+例)
+  com.udfv.frontend.FragmentPlugin fragmentFile2 /8:tmp.dat 2K 100 10
+</pre>
+<p>
+
+</p>
+<p>
+現在提供しているプラグインは以下の通りです。</p>
+<pre>
+  FragmentPlugin &lt;fragmentFile|fragmentFile2|fragmentDirectory&gt; &lt;file&gt; &lt;frag size&gt; &lt;n of frags&gt; &lt;n of chain&gt;
+
+&lt;file&gt;に &lt;n of frags&gt;個の &lt;frag size&gt;の大きさの領域を割り当てます。領域は ECCサイズで
+揃えられますので、ECCサイズ以下の &lt;frag size&gt;を指定すると結果として領域は断片化します。
+
+断片化したADを追加していく際 &lt;n of chains&gt;個ADを追加させた後、自動的にFLAG3のADを挿入し
+FEをチェーンします。
+
+最初の引数で指定する動作モードは以下の3つを用意しています。
+
+fragmentFile	
+	現在動作しません。
+
+fragmentFile2
+	fragmentFileを高速化したものです。
+
+fragmentDirectory
+	FileではなくDirectoryを断片化させます。
+
+※
+FileとDirectoryの二種類があるのは MetaDataPartitionMapがある場合、Directoryと
+Flieでデータが置かれるパーティションが違うからです。
+
+</pre>
+<p>
+
+</p>
+<pre>
+  ManyFilePlugin &lt;manyfile|manyfile2|manylink2&gt; &lt;directory&gt; &lt;file&gt; &lt;dir size&gt; &lt;file size&gt; &lt;n&gt;
+
+  directoryで指定されたディレクトリのサイズをdir sizeにし、
+  そのディレクトリ内にfile sizeの大きさのファイルをn個作成します。
+
+  directoryには、ファイルを作成するディレクトリを指定します。
+
+  fileは、作成するファイル名のベースとなる名前を指定します。
+  作成されるファイル名は、file + n + ".xxx"となります。
+
+  dir sizeには、ファイルを作成するディレクトリのサイズをバイトで指定します。
+  正しいイメージを作成する場合は、file sizeとnを考慮し、
+  全てのファイルが格納できるサイズを指定する必要があります。
+
+  file sizeには、作成するファイルの1つあたりのサイズをバイトで指定します。
+
+  nには、作成するファイルの個数を指定します。
+
+最初の引数で指定する動作モードは以下の3つを用意しています。
+
+manyfile
+	Directoryのサイズを &lt;dir size&gt;に広げ、ファイルを追加します。
+
+manyfile2
+	Directoryのサイズを自動で広げず、ファイルを追加します。
+
+manylink2
+	Directoryのサイズを自動で広げず、nが 0のファイルだけはファイルで作成し、
+	以降のファイルをそのファイルへのハードリンクで追加します。
+
+</pre>
+<p>
+
+</p>
+<pre>
+  OutSBFromMBFEPlugin
+
+  リビジョンがUDF 2.50以降で、Metadata Bitmapが記録されており、
+  且つそのbitmapがMetadata Bitmap FE内にimmediateとして記録されているときに、
+  bitmapをFE外部へ記録します。
+
+  引数はありません。
+
+  bitmapを記録するための外部領域は、適当な空いている場所に確保されます。
+</pre>
+<p>
+
+</p>
+<pre>
+  RemoveExtAttrPlugin [&lt;file or directory&gt;]
+
+  指定されたファイルまたはディレクトリ以下全てのFile Entryから、
+  Extended Attributeを削除します。
+
+  file or directoryを省略した場合、ルートディレクトリ以下の全ての
+  Extended Attributeを削除します。
+</pre>
+<p>
+
+</p>
+<pre>
+  RemoveStreamDirPlugin [&lt;file or directory&gt;]
+
+  指定されたファイルまたはディレクトリ以下全てのFile Entryから、
+  Stream Directoryを削除します。
+
+  file or directoryを省略した場合、System Stream Directoryを全て削除します。
+</pre>
+<p>
+
+</p>
+</div>
+</body>
+</html>

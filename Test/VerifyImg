@@ -1,0 +1,8 @@
+#!/bin/sh
+
+#CLASSPATH=./dist-free/lib/udf.jar:lib/xerces.jar:lib/xml-apis.jar:lib/xmlParserAPIs.jar
+#CLASSPATH=./dist-free/lib/udfv-free.jar
+#CLASSPATH=./dist/lib/udfv.jar:lib/xerces.jar:lib/xml-apis.jar:lib/xmlParserAPIs.jar
+CLASSPATH=$CLASSPATH:./build:udfv.jar:lib/xerces.jar:lib/xml-apis.jar:lib/xmlParserAPIs.jar
+
+java -Xincgc -Xmx1024m -cp $CLASSPATH com.udfv.test.VerifyImg $@ 

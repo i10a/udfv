@@ -1,0 +1,6 @@
+#!/bin/sh
+
+#CLASSPATH=./build:lib/xerces.jar:lib/xml-apis.jar:lib/xmlParserAPIs.jar
+CLASSPATH=$CLASSPATH:./build:udfv/udfv.jar:lib/xerces.jar:lib/xml-apis.jar:lib/xmlParserAPIs.jar
+
+java -Xincgc -Xmx128m -cp $CLASSPATH com.udfv.test.OperateImg $@ 

@@ -1,0 +1,50 @@
+%%com.udfv.ecma167
+
+%UDF_short_ad UDF_AD
+@A
+Short&nbsp;Allocation&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Extent Length:uint32a
+Extent Position:uint32
+@
+
+%UDF_long_ad UDF_AD
+@A
+Long&nbsp;Allocation&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Extent Length:uint32a
+Extent Location:lb_addr
+Implementation Use:bytes:6
+@
+
+%UDF_ext_ad UDF_AD
+@A
+Extended&nbsp;Allocation&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Extent Length:uint32a
+Recorded Length:uint32
+Information Length:uint32
+Extent Location:lb_addr
+Implementation Use:bytes:2
+@
+
+%UDF_lb_addr
+@A
+Recorded&nbsp;address&nbsp;を表現するクラス。
+
+@L
+Logical Block Number:uint32
+Partition Reference Number:uint16
+@
+
+%UDF_extent_ad
+@A
+Extent&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Extent Length:uint32
+Extent Location:uint32
+@

@@ -1,0 +1,18 @@
+%%com.udfv.udf250
+
+%UDF_MetadataPartMap UDF_PartMap
+@L
+Partition Map Type:uint8
+Partition Map Length:uint8
+Reserved:bytes:2
+Partition Type Identifier:regid%base=com.udfv.ecma167
+Volume Sequence Number:uint16
+Partition Number:uint16
+Metadata File Location:uint32
+Metadata Mirror File Location:uint32
+Metadata Bitmap File Location:uint32
+Allocation Unit Size:uint32
+Alignment Unit Size:uint16
+Flags:uint8
+Reserved2:bytes:5
+@

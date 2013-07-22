@@ -1,0 +1,5 @@
+#!/bin/sh
+
+CLASSPATH=./build:udfv.jar:lib/xerces.jar:lib/xml-apis.jar:lib/xmlParserAPIs.jar
+
+java -Xincgc -Xmx768m -cp $CLASSPATH com.udfv.test.Frontend $@ 

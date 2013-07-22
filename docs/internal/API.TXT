@@ -1,0 +1,98 @@
+= Imageファイルから読む
+
+//UDF環境を作る
+UDF_Env env = new UDF_Env();
+
+//ファイルへのアクセサを作り、環境に設定
+env.f = new UDF_RandomAccessFile("file", "r");
+
+//UDF_Imageを作る
+UDF_Image image = UDF_ImageFactory.genImage(env, env.f);
+
+//XMLドキュメントの作成およびバインド
+image.setUDFDocument(UDF_Util.genDocument());
+
+//Imageから読む
+image.readFrom(env.f);
+
+以上で UDFツリーが構成される。
+
+= XMLから読む
+
+//UDF環境を作る
+UDF_Env = new UDF_Env();
+
+//DOM Parserを作る
+parser = new DOMParser();
+
+//XMLを読み DOMを構築
+parser.parse("xml_file");
+Document input_doc = parser.getDocument();
+
+//UDF_Imageを作る
+UDF_Image image = UDF_ImageFactory.genImage(env, 0x250);
+
+//アクセサを作成しバインド(何かを作らなければならない)
+//ここでは何もしない UDF_RandomAccessZeroを作成
+env.f = new UDF_RandomAccessZero(env.image_size);
+
+//環境のバインド
+image.setEnv(env);
+
+//XMLから読み UDFを構築
+image.readFromXML(input_doc);
+
+以上で UDFツリーが構成される。
+
+= ディレクトリツリーの取得
+
+env.root_fe に Roort Directoryのルートのファイルエントリが、
+env.sroot_fe に Stream Directoryのルートのファイルエントリが
+
+あるので、そこから辿ればいい。
+
+== ディレクトリツリー構造
+
+- FE(File Entry)がデータ領域を記述する。
+- データ領域は FEのタイプがディレクトリの場合は FID(File Identifier Descriptor)の羅列
+  ファイルの場合はデータそのものである。
+
+== FE->FID
+
+Directory の FEが保持する FIDを取得するメソッドが用意されている。
+
+UDF_ElementList getDirectoryList();
+
+- 最初の要素は親ディレクトリを指すFID(..)である可能性が高い。
+(正確には FIDの File Characteristicsを見る必要がある)
+
+このFEを指している FIDを取得するメソッドが用意されている。
+
+UDF_ElementList getReferencedFID();
+
+== FID->FE
+
+FIDが指すFEを取得するメソッドが用意されている。
+
+UDF_FEDesc getReferenceTo();
+
+- FEは複数の FIDから指される可能性がある。
+
+このFIDが含まれているディレクトリのFEを取得するメソッドが用意されている。
+
+UDF_FEDesc getReferencedBy();
+
+上記4つのメソッドを利用してディレクトリツリーを辿ることができる。
+
+
+== Example
+
+=== イメージを作る
+
+com.udfv.test.UDF_Xml2Img
+com.udfv.test.UDF_Img2Xml
+
+=== ディレクトリツリーを辿る
+
+com.udfv.test.UDF_TestApp#displayTree()
+

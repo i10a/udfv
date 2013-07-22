@@ -1,0 +1,71 @@
+【UDFVのセットアップ】
+
+・以下のものが使用できる環境であることを確認する。
+
+  J2SE 1.4.2
+  ant
+  Subversion 1.1.x
+
+・lokiからcheckoutする。
+
+展開したいディレクトリで svn でチェックアウトする。
+
+例）
+  > svn checkout http://loki.heart-it.com/svn/UDFV/trunk
+
+例）社内であるならば以下のローカル名を指定しても良い。
+  > svn checkout http://loki.private/svn/UDFV/trunk
+
+・trunk ディレクトリが生成される。必要なら名称を変更する。
+※checkout時に名称を変えておいても良い。
+
+・trunk ディレクトリで antコマンドを実行するとUDFVライブラリ dist/lib/udfv.jar が生成される。
+
+【UDFVツール】
+
+・UDFVには以下の機能があり、対応するスクリプトファイルを用意してあります。
+  詳細は Test/readme.txt に記載されています。
+
+(1) メディアのイメージファイルから UDF の XML を生成する。
+  （シェルスクリプトファイル  trunk/Test/Img2xml）
+
+  trunk ディレクトリをカレントディレクトリとして、スクリプト Img2xml にイメージファイル名を
+  渡して実行することで標準出力に UDF の XML を出力します。
+
+  例）
+
+  > Test/Img2xml discimage/UDF200.IMG
+
+(2) UDF の XML からイメージファイルを生成する。
+  （シェルスクリプトファイル  trunk/Test/Xml2img）
+
+  trunk ディレクトリをカレントディレクトリとして、スクリプト Xml2img に XML ファイル名と
+  出力したいイメージファイルの名称を渡して実行することでイメージファイルを生成します。
+
+  例）
+
+  > Test/Xml2img xml/UDF200.XML discimage/UDF200FromXML.IMG
+
+(3) UDF の XML を読み取り、UDF の XML 情報を出力する。
+  （シェルスクリプトファイル  trunk/Test/Xml2img）
+
+  trunk ディレクトリをカレントディレクトリとして、スクリプト Xml2img に XML ファイル名を
+  渡して実行することで標準出力に UDF の XML を出力します。
+
+  例）
+
+  > Test/Xml2xml xml/UDF200.XML
+
+(4) メディアのイメージに対して検証を行う。
+  （シェルスクリプトファイル  trunk/Test/VerifyImg）
+
+  trunk ディレクトリをカレントディレクトリとして、スクリプト VerifyImg に イメージファイル名を
+  渡して実行することで、そのイメージファイルが持つ UDF ファイルシステムの検証を行い、
+  結果を標準出力に受け渡します。
+
+  例）
+
+  > Test/VerifyImg discimage/UDF200.IMG
+
+
+

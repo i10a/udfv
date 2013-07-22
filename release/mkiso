@@ -1,0 +1,3 @@
+#!/bin/sh
+
+mkisofs -J -V UDFV-$@ -o $@.iso $@

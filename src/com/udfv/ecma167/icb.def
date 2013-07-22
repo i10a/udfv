@@ -1,0 +1,16 @@
+%%com.udfv.ecma167
+
+%UDF_icbtag
+@A
+ICB&nbsp;Tag&nbsp;を表現するクラス。
+
+@L
+Prior Recorded Number of Direct Entries:uint32
+Strategy Type:uint16::default=4
+Strategy Parameter:bytes:2
+Maximum Number of Entries:uint16::default=1
+Reserved:bytes:1
+File Type:uint8
+Parent ICB Location:lb_addr
+Flags:uint16
+@

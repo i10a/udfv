@@ -1,0 +1,70 @@
+= 1. 動作環境
+
+UDFVライブラリを使用するためには、以下の環境が必要です。
+
+- Java(TM)アプリケーションを動作させることができる J2SE v 1.4.2 以降の環境。
+
+    J2SE Software Development Kit(SDK) v 1.4.2 もしくは
+    J2SE Java(TM) Runtime Environment (JRE) v 1.4.2 
+
+    Java 2 Platform, Standard Edition v 1.4.2 (J2SE) のダウンロードページ。
+      http://java.sun.com/j2se/1.4.2/ja/download.html
+
+J2SE SDKやJ2SE JREのインストールについては Sun の Web ページをご覧ください。
+
+- 'THE APACHE XML PROJECT'が提供している Java 2 用 XML パーサーライブラリ。
+  またはそれに準じるもの。
+
+    'THE APACHE XML PROJECT'の Xerces2 Java Parser の Web ページ。
+      http://xml.apache.org/xerces2-j/
+
+現時点(2005/05/02)での最新バージョンは Xerces2 Java Parser 2.6.2 Release です。
+なお、Xerces ライブラリに関しては、配布パッケージに同梱されています。
+
+
+
+== 1.1. Fedora Core 3
+
+Fedora Core 3での環境構築の方法を解説します。
+
+=== 1.1.1. Fedora Core 3のインストール
+
+「インストールの種類」では「ワークステーション」を選択します。
+
+「パッケージインストールのデフォルト」で
+「インストールするソフトウェアをカスタマイズ」を選択し、
+「パッケージグループの選択」画面へ移行します。「開発ツール」の詳細を選択後に開く
+「開発ツールの詳細」ダイアログから、gcc-java のチェックボックスのチェックを外してください。
+
+インストールに関するその他の情報は適宜設定して構いません。
+
+インストール後、全てroot権限で以下の処理を行います。
+
+
+=== 1.1.2. Java SDK
+
+http://java.sun.com/j2se/1.4.2/download.html から
+「Download J2SE SDK」を選択します。
+
+ライセンス条項に同意し、
+「RPM in self-extracting file  (j2sdk-1_4_2_08-linux-i586-rpm.bin,33.64MB) 」
+からj2sdk-1_4_2_08-linux-i586-rpm.binをダウンロードして下さい。
+
+ダウンロードが完了したら、以下のように入力し、Java SDKをインストールします。
+
+----------------------------------------------------------------------
+% chmod u+x j2sdk-1_4_2_08-linux-i586-rpm.bin
+% ./j2sdk-1_4_2_08-linux-i586-rpm.bin
+% rpm -Uvh j2sdk-1_4_2_08-linux-i586.rpm
+----------------------------------------------------------------------
+
+
+=== 1.1.3. 環境変数の設定
+
+以下のように環境変数を設定してください。
+
+----------------------------------------------------------------------
+% export JAVA_HOME=/usr/java/j2sdk1.4.2_08
+% export PATH=${JAVA_HOME}/bin:${PATH}:${ANT_HOME}/bin
+----------------------------------------------------------------------
+

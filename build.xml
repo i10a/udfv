@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="UDFV" default="dist" basedir=".">
+<description>UDFV build file</description>
+<property name="src" location="src"/>
+<property name="src_free" location="src-free"/>
+<property name="build" location="build"/>
+<property name="build_free" location="build-free"/>
+<property name="src_ume" location="src-ume"/>
+<property name="build_ume" location="build-ume"/>
+<property name="dist" location="dist"/>
+<property name="dist_free" location="dist-free"/>
+<property name="dist_ume" location="dist-ume"/>
+<property name="tools" location="bin-src"/>
+<property name="build_tools" location="bin"/>
+
+<path id="local.lib">
+<fileset dir="lib">
+<include name="*.jar"/>
+</fileset>
+</path>
+<target name="init"/>
+
+<target name="tools" description="compile the source">
+<mkdir dir="${build_tools}"/>
+<javac srcdir="${tools}" destdir="${build_tools}" debug="false" encoding="UTF-8"/>
+</target>
+
+<target name="upversion" depends="tools">
+<java classname="mkversion" classpath="./bin" fork="true" output="src/com/udfv/util/UDF_Version.java">
+  <arg value="0.90(Beta)" />
+</java>
+</target>
+
+<target name="compile" depends="init,tools" description="compile the source">
+<mkdir dir="${build}"/>
+<javac srcdir="${src}" destdir="${build}" debug="true" deprecation="yes" encoding="UTF-8" optimize="yes">
+<classpath refid="local.lib"/>
+</javac>
+</target>
+
+<target name="compile_free" depends="init,tools" description="compile the source">
+<mkdir dir="${build_free}"/>
+<java classname="marimite" classpath="./bin" fork="true" />
+<delete>
+  <fileset file="${src_free}/com/udfv/util/UDF_XMLUtil.java" />
+</delete>
+<copy todir="${src_free}/com/udfv/util">
+  <fileset file="free/UDF_XMLUtil.java"/>
+</copy>
+<java classname="mkversion" classpath="./bin" fork="true" output="${src_free}/com/udfv/util/UDF_Version.java">
+  <arg value="0.90(Beta)" />
+</java>
+<javac srcdir="${src_free}" destdir="${build_free}" optimize="yes" debug="false" encoding="UTF-8" classpath="dist/lib/udfv.jar">
+</javac>
+</target>
+
+<target name="compile_ume" depends="init,tools" description="compile the source">
+<mkdir dir="${build_ume}"/>
+<java classname="ume" classpath="./bin" fork="true" />
+<delete>
+  <fileset file="${src_ume}/com/udfv/util/UDF_XMLUtil.java" />
+</delete>
+<copy todir="${src_ume}/com/udfv/util">
+  <fileset file="ume/UDF_XMLUtil.java"/>
+</copy>
+<java classname="mkversion" classpath="./bin" fork="true" output="${src_ume}/com/udfv/util/UDF_Version.java">
+  <arg value="0.90(Beta)" />
+</java>
+<javac srcdir="${src_ume}" destdir="${build_ume}" optimize="yes" debug="false" encoding="UTF-8" classpath="dist/lib/udfv.jar">
+</javac>
+</target>
+
+
+<target name="dist" depends="compile" description="generate the distribution">
+<mkdir dir="${dist}/lib"/>
+<jar destfile="${dist}/lib/udfv.jar">
+  <fileset dir="${build}"/>
+  <fileset dir="${src}" includes="com/udfv/gui/resource/*.gif"/>
+</jar>
+</target>
+
+<target name="dist_free" depends="compile_free" description="generate the distribution">
+<mkdir dir="${dist_free}/lib"/>
+<jar destfile="${dist_free}/lib/udfv-free.jar" basedir="${build_free}"/>
+</target>
+
+<target name="dist_ume" depends="compile_ume" description="generate the distribution">
+<mkdir dir="${dist_ume}/lib"/>
+<jar destfile="${dist_ume}/lib/udfv-ume.jar" basedir="${build_ume}"/>
+</target>
+
+<target name="clean" description="crean up">
+<delete dir="${build}"/>
+<delete dir="${dist}"/>
+<delete dir="${src_free}"/>
+<delete dir="${build_free}"/>
+<delete dir="${dist_free}"/>
+<delete dir="${src_ume}"/>
+<delete dir="${build_ume}"/>
+<delete dir="${dist_ume}"/>
+<delete dir="${build_tools}"/>
+</target>
+
+<target name="doc">
+<mkdir dir="docs/api"/>
+<javadoc
+	Locale="ja_JP"
+	destdir="docs/api"
+	sourcepath="src"
+	packagenames="com.udfv.*"
+	author="true"
+	version="true"
+	use="true"
+	Encoding="UTF-8"
+	charset="UTF-8"
+	windowtitle="UDFV API">
+<group title="Exception Packages" packages="com.udfv.exception*"/>
+<group title="Access Packages" packages="com.udfv.access*"/>
+<group title="ECMA119 Packages" packages="com.udfv.ecma119*"/>
+<group title="ECMA167 Packages" packages="com.udfv.ecma167*"/>
+<group title="UDF102 Packages" packages="com.udfv.udf102*"/>
+<group title="UDF150 Packages" packages="com.udfv.udf150*"/>
+<group title="UDF200 Packages" packages="com.udfv.udf200*"/>
+<group title="UDF201 Packages" packages="com.udfv.udf201*"/>
+<group title="UDF250 Packages" packages="com.udfv.udf250*"/>
+<group title="UDF260 Packages" packages="com.udfv.udf260*"/>
+<group title="Example Packages" packages="com.udfv.test*"/>
+<group title="CORE Packages" packages="com.udfv*"/>
+</javadoc>
+</target>
+
+<target name="validate">
+  <xmlvalidate
+	file="Q.XML"
+	warn="false"
+	>
+    <dtd publicId="-//Heart Solutions, Inc.//DTD UDF TEST TOOL//EN" location="udf.dtd" />
+  </xmlvalidate>
+</target>
+
+</project>
+

@@ -1,0 +1,19 @@
+%%com.udfv.udf200
+
+%UDF_VirtualAllocTable200
+@I
+com.udfv.udf150.UDF_VirtualAllocTable
+@L
+Length Of Header:uint16::default=152
+Length of Implementation Use:uint16
+Logical Volume Identifier:dstring:128
+Previous VAT ICB location:uint32::default=4294967295L
+Number of Files:uint32
+Number of Directories:uint32
+Minimum UDF Read Version:uint16
+Minimum UDF Write Version:uint16
+Maximum UDF Write Version:uint16
+Reserved:bytes:2
+Implementation Use:bytes:getLenOfImplUse().getIntValue()
+VAT entry:bytes:getHintSize() - 152
+@

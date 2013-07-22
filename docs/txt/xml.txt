@@ -1,0 +1,879 @@
+= 1. XML
+
+
+== 1.1. 概略
+
+UDFVライブラリは、大まかに
+
+-# イメージファイルを XMLに変換する機能
+-# XMLからイメージファイルを生成する機能
+
+の2つの機能を備えています。1)と2)は相互に変換可能で、例えば
+
+- 適当なイメージファイルからXMLを生成する
+- XMLを修正して新たなイメージを生成する  
+- 修正したXMLからテストディスクを生成する
+
+といった作業が可能です。詳細はUDFV toolsのドキュメントを参照してください。
+
+特にXMLからイメージに変換するときは、
+UDFとして正しいかどうかのチェックを一切行わないため、
+正しいイメージファイルはもちろん、エラーのあるイメージファイルも作成することができます。
+
+この章では、これらの機能で用いられる XMLのフォーマットについて解説します。
+
+
+
+== 1.2. XMLと ECMA/UDFの対応
+
+XMLと UDFVライブラリの内部のデータ構造は密接な関係があり、
+XMLの一つのノードと UDFVライブラリにおけるJavaの一つのインスタンスが
+1対1に対応しています。
+
+つまり、各XMLノードはJavaのクラスという型を持ち、
+且つその型をもったインスタンスということになります。
+
+例えば、一般的なAnchor Volume Descriptorは XMLでは次のように表わされます。
+
+--------------------------------------------------------------------
+        <UDF_desc2>
+            <desc-tag>
+                <tag-id>2</tag-id>
+                <desc-version>3</desc-version>
+                <tag-checksum>167</tag-checksum>
+                <reserved size="1">=00</reserved>
+                <tag-serial-number>1</tag-serial-number>
+                <desc-crc>23380</desc-crc>
+                <desc-crc-len>496</desc-crc-len>
+                <tag-loc>256</tag-loc>
+            </desc-tag>
+            <main-vol-desc-seq-extent>
+                <extent-len>32768</extent-len>
+                <extent-loc>32</extent-loc>
+            </main-vol-desc-seq-extent>
+            <reserve-vol-desc-seq-extent>
+                <extent-len>32768</extent-len>
+                <extent-loc>64</extent-loc>
+            </reserve-vol-desc-seq-extent>
+            <reserved size="480">=00{480}</reserved>
+        </UDF_desc2>
+--------------------------------------------------------------------
+
+UDF_desc2は ECMA167で規定される Anchor Volume Descriptorを表わすと同時に
+UDFVライブラリの Javaのクラスである UDF_desc2を表わします。
+
+UDF_desc2は 子供ノードとして Descriptor Tag, Main Volume Descriptor
+Sequence Extent, Reserve Volume Descriptor Seq Extent、 reserved
+の3つの子供ノードを持ち、それぞれ、
+UDF_tag, UDF_extent, UDF_extent, UDF_bytesという型を持ちます。
+
+UDFVライブラリの内部的なデータ構造も同様で、UDF_desc2のインスタンスがあり、
+そのインスタンスの子供として、UDF_tag, UDF_extent, UDF_extent, UDF_bytes
+の型のインスタンスが存在します。
+
+型には、 uint32や dstringといった、
+ECMAで規定されている基本型のときもありますし、
+Praimary Volume Descriptorといった、基本型を中に持つデスクリプタの型もあります。
+
+
+
+== 1.3. XMLの型と名前
+
+=== 1.3.1 無名ノード
+
+UDFVライブラリでは、UDFの全てのデータを XMLで表現できます。
+例えば uint32(ECMA1671/7.1.6)で定義されるデータは次のように記述します。
+
+<UDF_uint32>288</UDF_uint32>
+
+UDFVライブラリは上記のようなXMLノードがあると、その位置に 288をデータとして書き込み、
+4バイトだけデータを進めます。結果イメージファイルには
+
+0x20 0x01 0x00 0x00
+
+とデータが書き込まれます。連続データも作成可能です。例えば、
+
+<UDF_uint32>288</UDF_uint32>
+<UDF_uint32>8544</UDF_uint32>
+
+というデータは
+
+0x20 0x01 0x00 0x00 0x00 0x00 0x21 0x60
+
+とデータが書き込まれます。
+
+UDFVライブラリでは ECMAやUDFで定義された型を表わすデータは
+UDF_を接頭辞としてつけたノード名で表わすいう約束があります。
+この名前は Javaのクラス名にも一致します。（クラス名一覧については付録Bを参照してください。）
+
+この場合XMLノード名を見れば、そのデータのタイプがわかり、
+XMLノード名と型名が名前レベルで一致します。
+
+このようなデータを無名ノードと定義します。
+
+無名ノードはデータ中のどこにでも置けるわけではなく、UDF_bytes型または
+UDF_Extent型のノードの中のみという約束があります。
+UDF_Extent型については 1.6.、UDF_bytes型については1.5.4.で解説します。
+
+=== 1.3.2 名前つきノード
+
+ECMAやUDF では、ほとんどの全ての要素はデスクリプタとして表現され、
+どのようなデータがどのような位置に配置され、
+どのような意味を持つのかは仕様として決まっています。
+
+例えば、Descriptor Tag(ECMA167 3/7.2)は ECMAによると
+
+-----------------------------------------------------------------------
+Tag Identifier		uint16
+Descriptor Version	uint16
+Tag Checksum		uint8
+Reserved		#00 bytes
+Tag Serial Number	uint16
+Descriptor CRC		uint16
+Descriptor CRC Length	uint16
+Tag Location		uint32
+-----------------------------------------------------------------------
+
+となっています。このデスクリプタを無名ノードだけで表わすと、次のようになります。
+
+-----------------------------------------------------------------------
+<UDF_bytes size="16">
+    <UDF_uint16>257</UDF_uint16>
+    <UDF_uint16>3</UDF_uint16>
+    <UDF_uint8>118<UDF_uint8>
+    <UDF_bytes size="1">=00</UDF_bytes>
+    <UDF_uint16>1<UDF_uint16>
+    <UDF_uint16>27723<UDF_uint16>
+    <UDF_uint16>24<UDF_uint16>
+    <UDF_uint32>161<UDF_uint32>
+</UDF_bytes>
+-----------------------------------------------------------------------
+
+しかし、このような表現は煩雑で、
+一見してそのデータがどこで使用されているのかがわかりません。
+そこでその型が自明であるときは、名前つきノードで表わすことが出来るようになっています。
+
+名前つきノードのXMLノード名の命名規則は、
+ECMAで定義されているデスクリプタのメンバ名をそのまま命名規則にのっとり、
+変換したものです。（変換規則の詳細は付録 Aを参考にしてください。）
+
+名前つきノードを使うと Descriptor Tagは次のように表現されます。
+
+-----------------------------------------------------------------------
+<UDF_tag>
+    <tag-id>257</tag-id>
+    <desc-version>3</desc-version>
+    <tag-checksum>118</tag-checksum>
+    <reserved size="1">=00</reserved>
+    <tag-serial-number>1</tag-serial-number>
+    <desc-crc>27723</desc-crc>
+    <desc-crc-len>24</desc-crc-len>
+    <tag-loc>161</tag-loc>
+</UDF_tag>
+-----------------------------------------------------------------------
+
+<tag-id>、<desc-version>等の型は <UDF_tag>内にあるため、
+型が何であるのかは自明であることに注意してください。もし <UDF_tag>内になければ、
+パーザは <tag-id>が一体何を指すのかがわかりませんので、
+XMLとして無効なデータとなります。
+
+
+=== 1.3.3. Javaクラスとの関係
+
+5.3.2.の例で、
+
+-----------------------------------------------------------------------
+<UDF_bytes size="16">
+    <UDF_uint16>257</UDF_uint16>
+    <UDF_uint16>3</UDF_uint16>
+    <UDF_uint8>118<UDF_uint8>
+    <UDF_bytes size="1">=00</UDF_bytes>
+    <UDF_uint16>1<UDF_uint16>
+    <UDF_uint16>27723<UDF_uint16>
+    <UDF_uint16>24<UDF_uint16>
+    <UDF_uint32>161<UDF_uint32>
+</UDF_bytes>
+-----------------------------------------------------------------------
+
+と記述しても、
+
+-----------------------------------------------------------------------
+<UDF_tag>
+    <tag-id>257</tag-id>
+    <desc-version>3</desc-version>
+    <tag-checksum>118</tag-checksum>
+    <reserved size="1">=00</reserved>
+    <tag-serial-number>1</tag-serial-number>
+    <desc-crc>27723</desc-crc>
+    <desc-crc-len>24</desc-crc-len>
+    <tag-loc>161</tag-loc>
+</UDF_tag>
+-----------------------------------------------------------------------
+
+と記述しても、最終的にイメージにしたときのデータの内容は同じです。
+しかし内部的なデータ構造としては、大きな違いがあります。
+
+前者はデータが羅列されているだけであり、
+それぞれのデータの関連には意味付けがされていません。
+
+一方後者は ECMA167 1/7.2で定義されている Descriptor Tagであることが明確であり、
+意味付けもされています。
+
+UDFVライブラリでは XMLからデータを読み込んだあと、
+内部的にクラスをインスタンス生成します。その際、XMLのノード1つに対し、
+クラスが1つ対応し、また、インスタンスが1つ生成されます。
+
+生成されるインスタンスのクラスが XMLノードの型であり、
+生成されるインスタンスがそのデータということになります。
+
+前者の形式ですと、内部的には UDF_bytes.classがインスタンス化され、
+その子供として UDF_uint16.classや UDF_uint32.classが生成されます。
+
+後者の形式ですと、内部的には UDF_tag.classがインスタンス化され、
+その子供として UDF_uint16.classや UDF_uint32.classが生成されます。
+
+ベリファイは各クラスに対してメソッドが用意されています。
+後者の形式ですと、UDF_tagとしてのベリファイを行いますが、
+前者の形式ですと、何も行いません。
+
+例えば、後者は<tag-checksum>と他のデータの整合性等のチェックが
+可能ですが、前者ではできません。
+
+このように同じデータもXMLの表現の方法の違いにより、
+挙動が変ってしまうことがありますので XMLを作成する人は注意してください。
+
+
+
+== 1.4. XMLの基本構成
+
+=== 1.4.1. ルートノード <udf>
+
+UDFVライブラリにおけるXMLのルートノードは <udf>で、
+その第一の子供にシステムノード(<system>)、
+第二のノードにパーティションノード(<partition-info>)、
+第三のノードにパーティションマップノード(<partition-map-info>)、
+と続き、以降 UDF_Extent型のノードが続きます。
+
+ただし、現在のバージョンでは <partition-info>ノードは機能していません。
+
+-----------------------------------------------------------------------
+<udf>
+        <system>
+		....
+        </system>
+        <partition-info>
+		....
+	</partition-info>
+        <partition-map-info>
+		....
+	</partition-map-info>
+	<UDF_Extent>
+		....
+	</UDF_Extent>
+	<UDF_Extent>
+		....
+	</UDF_Extent>
+	....
+</udf>
+-----------------------------------------------------------------------
+
+<udf>の直下には <vrs>, <mvds>, <rvds>, <is>, <avdp>, <fsds>といった
+名前つきノードが存在する可能性がありますが、
+これらはいずれも UDF_Extent型のノードです。
+
+Java的には、これらは UDF_Extentもしくは、
+UDF_Extentを継承したクラスということになります。
+
+=== 1.4.2. システムノード <system>
+
+ECMA/UDFでは表現できないデータを表現するノードで、
+<system>というノードで表わされます。
+
+<system>内には以下の6項目が記録されます。
+
+-----------------------------------------------------------------------
+    <system>
+        <version>$Rev: 1350 $</version>
+        <image-file>test.IMG</image-file>
+        <image-comment>no comments</image-comment>
+        <image-size>4706074624</image-size>
+        <image-total-sec>2297888</image-total-sec>
+        <media-type>2</media-type>
+    </system>
+-----------------------------------------------------------------------
+
+<system>ノードは<udf>の第一の子供として、必ず存在しなければなりません。
+
+=== 1.4.3. パーティション情報ノード <partition-info>
+
+ECMA/UDFの内部的なパーティション構造を表現する<partition-info>
+というノードです。
+
+UDFVではパーティションが1つだけにしか対応していないので、
+現在このノードは使用されていません。
+
+
+=== 1.4.4. パーティションマップ情報ノード <partition-map-info>
+
+パーティションマップはUDFで中心的な役割をします。UDFVライブラリでは、
+このパーティションマップを XMLのデータ部から切離して、
+先頭に記録することにより、視覚的に判りやすくしています。
+
+<partition-map-info>ノードの表現の意味は 1.8 を参考にしてください。
+
+=== 1.4.5. データノード
+
+ECMA/UDFのイメージ本体を表わすノードです。
+<udf>直下にはUDF_Extent 型の無名ノードもしくは、
+UDF_Extent型の名前つきノードを置くことができます。
+それ以外のデータを置くことはできません。
+
+データノードはパーティションノード <partition>以降であれば、
+いくらでも置くことができます。
+
+
+
+== 1.5. 基本ノード 
+
+=== 1.5.1. 基本ノードの定義
+
+基本ノードとはその内部に子供ノードを持たない型のデータです。
+
+=== 1.5.2. 数値型
+
+==== 1.5.2.1. 基本の数値型
+
+数値型を表わすものとしては以下のものがあります。
+
+UDF_uint8, UDF_uint16, UDF_uint32, UDF_uint64
+(ECMA167 1/7.1〜7.4)
+
+UDF_uint16_be, UDF_uint32_be, UDF_uint64_be, UDF_uint16_lebe,
+UDF_uint32_lebe, UDF_uint64_lebe
+(ECMA119)
+
+-----------------------------------------------------------------------
+例)
+   <UDF_uint32>8544</UDF_uint32>
+-----------------------------------------------------------------------
+
+==== 1.5.2.2. 特殊な数値型
+
+UDF_short_ad, UDF_long_ad, UDF_extent_ad のExtent Length
+で使用される数値は規格上は UDF_int32ですが、
+UDFVライブラリでは UDF_uint32a 型が定義されており、
+
+interpretation + ":" + lengthで長さを記述します。
+
+-----------------------------------------------------------------------
+例)
+   <UDF_short_ad>
+       <extent-len>0:156</extent-len>
+       <extent-pos>161</extent-pos>
+   </UDF_short_ad>
+-----------------------------------------------------------------------
+
+=== 1.5.3. タイムスタンプ型(UDF_timestamp)
+
+TypeAndTimeZone + "年/月/日" +" " + "時:分:秒" + " " + "1/100.1/10000.1/1000000"
+
+で現わされます。
+
+-----------------------------------------------------------------------
+例)
+  <recording-date-and-time>1+0540 2002/03/04 05:06:07 00.00.00</recording-date-and-time>
+-----------------------------------------------------------------------
+
+=== 1.5.4. バイトデータ <UDF_bytes>
+
+バイトデータは任意のバイトデータを表わすことができるクラスです。
+XMLノードでは size属性が必須となります。
+
+==== 1.5.4.1. バイトデータの表現
+
+バイトデータは基本ノードの1つですが、例外的に子供を持つことができます。
+子供をもつ UDF_bytesの詳細は 1.5.4.5.を参考にしてください。
+
+-----------------------------------------------------------------------
+例)
+4バイトの「0x41 0x42 0x43 0x44」というバイト列 
+
+	<UDF_bytes size="4">ABCD</UDF_bytes>
+-----------------------------------------------------------------------
+
+
+もし size属性よりXMLに記述されたバイト数が少い場合は足りない分は 0x00
+で埋められます。逆に size属性よりXMLに記述されたバイト数が多い場合は、
+多い分は切りつめられますので注意してください。
+
+==== 1.5.4.2. 省略表現
+
+バイトデータは同じバイトが繰り返し並ぶことが多いため、
+視覚的に見やすくなるように{}を使用して短く表現することができます。
+
+-----------------------------------------------------------------------
+例)
+2048バイトの「0x41... 0x41」というバイト列
+
+<UDF_bytes size="2048">A{2048}</UDF_bytes>
+-----------------------------------------------------------------------
+
+==== 1.5.4.3. 特殊文字の表現
+
+可視化できない特殊な文字コードが含まれている場合は、
+=の後に16進数で二桁の数を書くことで表現します。(Quoted Printable Encodeです)
+
+-----------------------------------------------------------------------
+例)
+4バイトの「0x00 0x01 0x02 0x03」というバイト列は
+
+<UDF_bytes size="4">=00=01=02=03</UDF_bytes>
+-----------------------------------------------------------------------
+
+==== 1.5.4.4. エンコードの設定
+
+どのようなバイト列があるのか事前にわかっている場合は、
+XML属性に encodingを指定することにより、より見やすい表記が可能です。
+
+UDFVライブラリでは CS0および OSTA Compressed Unicodeの2つをサポートしています。
+
+-----------------------------------------------------------------------
+例)
+OSTA Compressed Unicodeでエンコードされた DVD_RTAVというデータ
+
+<UDF_bytes encoding="OSTA Compressed Unicode" size="9">8:DVD_RTAV</UDF_bytes>
+-----------------------------------------------------------------------
+
+この場合どのようにXMLで文字列を表記するかはEncodingスキーマによります。
+（詳しくは付録 cを参照してください。）
+
+エンコーディングを指定すれば日本語が(表現できるエンコーディングなら)
+含まれるファイル名等も普通にテキストで表現できます。
+
+==== 1.5.4.5. 子供を持つ<UDF_bytes>
+
+UDF_bytesの大きな特徴は任意のUDFノードを子供として持つことが出来ることです。
+
+-----------------------------------------------------------------------
+例)
+<UDF_bytes size="...">
+    <UDF_desc257>
+        ....
+    </UDF_desc257>
+    <UDF_desc257>
+        ....
+    </UDF_desc257>
+<UDF_bytes>
+-----------------------------------------------------------------------
+
+この場合<UDF_bytes>は それぞれの<UDF_desc257>をバイトに変換し、
+それを連結したバイトと同等になります。
+
+子供を持つ UDF_bytesも size属性は必須です。この場合、
+子供のサイズ合計が sizeに満たない場合は足りない分は 0x00で埋められます。
+
+逆にサイズより大きい場合は、
+余った分はデータとして切りつめられますので注意してください。
+
+==== 1.5.4.6. <UDF_bytes>の制限
+
+- データを持ち、且つ、子供を持つような UDF_bytesは作ることはできません。
+- UDF_bytesの中に置くXMLノードは、全て無名ノードでなくてはなりません。
+
+
+=== 1.5.5. 文字列 <UDF_dstring>
+
+UDF_dstringは length属性が必須となる他は記述方法は UDF_bytesと同じです。
+(UDFVライブラリの内部的には UDF_dstringは UDF_bytesの子供クラスとして管理されています)
+
+-----------------------------------------------------------------------
+例)
+<lv-info1 encoding="OSTA Compressed Unicode" length="11" size="36">8:OWNER NAME</lv-info1>
+-----------------------------------------------------------------------
+
+
+=== 1.5.6 パディング <UDF_pad>
+
+端数調整のための XMLノードで、align属性がある他は記述方法は <UDF_bytes>と同じです。
+(UDFVライブラリの内部的には UDF_padは UDF_bytesの子供クラスです)
+
+-----------------------------------------------------------------------
+例)
+<UDF_pad align="2048" size="1536">=00{1536}</UDF_pad>
+-----------------------------------------------------------------------
+
+<UDF_pad>は RecalcXML等、XMLを操作するプログラムにおいて、
+端数の自動調整を行うなど重要な役割をします。
+
+
+
+== 1.6. 領域を表わすノード <UDF_Extent>
+
+=== 1.6.1. <UDF_Extent>の構造
+
+<UDF_Extent>はデータを表わす各ノードのイメージファイルにおける位置を
+決めるための特殊なノードで、UDFVライブラリにおける中心的な役割を担います。
+
+UDFではディレクトリ、パーティションマップ等が物理的に連続していない場合があります。
+<UDF_Extent>を使用すれば、連続したデータはもちろん、分断したり、
+断片化したデータも一つの連続した領域のように表現することができます。
+
+また、逆にUDFVライブラリでは位置を表わすためには必ず <UDF_Extent>
+を使用することが義務づけられています。この制限のため、<udf>の直下には
+<UDF_Extent>しか配置してはならないということになっています。
+
+<UDF_Extent>の構造は以下の通りです。
+
+-----------------------------------------------------------------------
+<UDF_Extent>
+	<extents>
+		<extent len="..." ... />
+		<extent len="..." ... />
+		<extent len="..." ... />
+	</extents>
+	...
+	...
+</UDF_Extent>
+-----------------------------------------------------------------------
+
+<UDF_Extent>の第一のノードは <extents>でなくてはなりません。<extents>
+の中身は <extent/>であり、<extent/>はその内部に子供を持つことができません。
+
+
+=== 1.6.2. <UDF_Extent>の記法
+
+UDF_Extentはパーティションマップの中だけでなく外の状態も表現できるように
+デザインされています。
+
+パーティションマップ内かパーティションマップ外かは、<extent/>の属性パラメータで決まります。
+ルールは以下の通りです。
+
+sec属性があり、partno属性がない場合、パーティションマップ外として扱われます。
+lbn属性があり、partno属性がある場合、パーティションマップ内として扱われます。
+
+例えば、イメージファイルのセクタ16から 32768バイトを示す extentは
+以下のようになります。
+-----------------------------------------------------------------------
+	<extents>
+            <extent len="32768" off="0" sec="16"/>
+	</extents>
+-----------------------------------------------------------------------
+
+パーティションマップ0の LBN 144から 2048バイトを示す extentは以下のようになります。
+
+-----------------------------------------------------------------------
+	<extents>
+            <extent len="2048" off="0" lbn="144" partno="0"/>
+	</extents>
+-----------------------------------------------------------------------
+
+パーティションマップ0の LBN 144から 2048バイトと、パーティションマップ1の LBN 146
+から 2048バイトの断片化された領域を一つの領域として扱う場合は次のように
+なります。
+
+-----------------------------------------------------------------------
+	<extents>
+            <extent len="2048" off="0" lbn="144" partno="0"/>
+            <extent len="2048" off="2048" lbn="146" partno="0"/>
+	</extents>
+-----------------------------------------------------------------------
+
+
+=== 1.6.3. off属性
+
+UDFVライブラリはUDF_Extentの管理を容易にするため、
+<extent/>にoff属性を自動で挿入します。
+
+off属性はその<extent/>が先頭から何バイト目にあるかを示すもので、
+ユーザが特に気にする必要はありません。
+
+
+
+== 1.7. 特殊ノード
+
+=== 1.7.1. <UDF_Data>
+
+ファイルの中身等、データ量が多く XML中にバイトデータとして表現することが
+好ましくない場合、<UDF_Data>として外部ファイルを参照できます。
+
+-----------------------------------------------------------------------
+例) /export6/issei/issei.IMGというファイルの 17629184バイト目から 
+    229376バイトのバイトデータを記述する
+
+<UDF_Data len="229376" src-file="/export6/issei/issei.IMG" src-off="17629184"/>
+-----------------------------------------------------------------------
+
+src-fileに nullを指定すると全て 0x00のデータとなります。
+
+UDF_Dataは中に子供を持つことができません。
+
+
+=== 1.7.2. <UDF_Directory>, <UDF_SDirectory>
+
+<UDF_Directory>、<UDF_SDirectory>は allocation desciptorで表現される
+ディレクトリデータの扱いを簡単にするために用意された、
+特殊な<UDF_bytes>です。
+
+UDFVライブラリの内部的にはUDF_Directory, 
+UDF_SDirectoryは UDF_bytesの子クラスになっています。
+
+子供として、<UDF_desc257>を保有することができます。
+
+
+
+== 1.8. パーティションマップ
+
+=== 1.8.1. パーティションマップの表現
+
+UDFのパーティションマップはかなり複雑です。
+UDFVライブラリでは、パーティションマップは最終的には 
+<UDF_Extent>でその領域を表現できることに着目し、
+全て <UDF_Extent>で表現をすることにしています。
+
+UDFVライブラリではこのパーティションマップを表わす UDF_Extentを
+<partition-map-info>という名前の要素として置き、視覚的に判りやすくしています。
+
+-----------------------------------------------------------------------
+例1)Spacering Partitoionが1つだけあるイメージ
+
+    <partition-map-info>
+        <partmap partno="0" type="UDF_SparablePartMap">
+            <extents>
+                <extent len="1055621120" off="0" sec="8576"/>
+            </extents>
+        </partmap>
+    </partition-map-info>
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------------------
+例2) Type1のパーティションマップが1つだけあるイメージ
+
+    <partition-map-info>
+        <partmap partno="0" type="UDF_type1">
+            <extents>
+                <extent len="1073182720" off="0" sec="272"/>
+            </extents>
+        </partmap>
+    </partition-map-info>
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------------------
+例3) Type1のパーティションマップが1つ、Metadata Partitionが1つあるイメージ
+     Metadata Partitionには mainと mirrorがあるので、以下のように
+     二つ列挙します。
+
+    <partition-map-info>
+        <partmap partno="0" type="UDF_type1">
+            <extents>
+                <extent len="4704960512" off="0" sec="272"/>
+            </extents>
+        </partmap>
+        <partmap partno="1" type="UDF_MetadataPartMap">
+            <extents>
+                <extent len="2097152" off="0" sec="416"/>
+            </extents>
+            <extents>
+                <extent len="2097152" off="0" sec="2296592"/>
+            </extents>
+        </partmap>
+    </partition-map-info>
+
+-----------------------------------------------------------------------
+
+
+
+= 6. DTD
+
+XMLのDTDの URIは
+
+-----------------------------------------------------------------------
+http://udfv.com/udfv.dtd
+-----------------------------------------------------------------------
+
+となっています。
+
+
+
+= Appendix A
+
+XMLノードの命名規則は以下の通りです。
+
+- ECMA167 / UDFの命名規則に準じる。
+- 原則小文字で記述する。
+- 単語の区切の位置で「-」を入れる。
+- 長い単語は略称を使用する。
+- 以下の長い名称は置き換える。
+
+-----------------------------------------------------------	
+名称		略称
+Descriptors?	desc
+Volume		vol
+Sequence	seq
+Maximum		max
+Minimum		min
+Location	loc
+Length		len
+Implementation	impl
+Partitions?	part
+Attributes?	attr
+Allocation	alloc
+Position	pos
+Identifier	id
+-----------------------------------------------------------	
+
+= Appendix B
+
+無名ノード 一覧
+
+-----------------------------------------------------------	
+UDF_uint8
+UDF_uint16
+UDF_uint16_be
+UDF_uint16_lebe
+UDF_uint32
+UDF_uint32_be
+UDF_uint32_lebe
+UDF_uint32a
+UDF_uint64
+
+UDF_timestamp
+
+UDF_bytes
+UDF_bitmap
+UDF_dstring
+UDF_pad
+
+UDF_charspec
+UDF_regid
+UDF_regid_UDFDomainIdSuffix
+UDF_regid_UDFIdSuffix
+UDF_regid_UDFImplIdSuffix
+
+UDF_ECMA119DirectoryRecord
+UDF_ECMA119PathTable
+UDF_ECMA119PathTable_be
+UDF_ECMA119_CD001_0
+UDF_ECMA119_CD001_1
+UDF_ECMA119_CD001_2
+UDF_ECMA119_CD001_255
+UDF_ECMA119_CD001_3
+UDF_ECMA119_VDS
+UDF_ECMA167_BEA01
+UDF_ECMA167_BOOT2
+UDF_ECMA167_NSR02
+UDF_ECMA167_NSR03
+UDF_ECMA167_TEA01
+
+UDF_Directory
+UDF_SDirectory
+
+UDF_VirtualPartMap
+UDF_SparablePartMap
+UDF_MetadataPartMap
+
+UDF_VirtualAllocTable
+UDF_VirtualAllocTable200
+UDF_MetadataExtent
+UDF_SparingTable
+
+UDF_LVInformation
+UDF_LogicalVolHeaderDesc
+UDF_PartHeaderDesc
+UDF_PathComponent
+
+UDF_attr1
+UDF_attr3
+UDF_attr5
+UDF_attr6
+UDF_attr12
+UDF_attr2048
+UDF_attr65536
+UDF_desc1
+UDF_desc2
+UDF_desc3
+UDF_desc4
+UDF_desc5
+UDF_desc6
+UDF_desc7
+UDF_desc8
+UDF_desc9
+UDF_desc9_ImplUse
+UDF_desc256
+UDF_desc257
+UDF_desc258
+UDF_desc259
+UDF_desc260
+UDF_desc261
+UDF_desc262
+UDF_desc263
+UDF_desc264
+UDF_desc265
+UDF_desc266
+UDF_tag
+UDF_icbtag
+
+UDF_short_ad
+UDF_long_ad
+UDF_lb_addr
+UDF_ext_ad
+UDF_extent_ad
+
+UDF_long_ad_ADImpUse
+-----------------------------------------------------------	
+
+= Appendix C
+
+encoding属性として有効なものは UDF_CS0と OSTA Compressed Unicodeの2種類です。
+
+・UDF_CS0
+
+UDF 2.1.2で規定された "OSTA Compressed Unicode"という文字列を表現するための
+エンコーディングです。それ以外の用途には使用されません。
+
+・OSTA Compressed Unicode
+
+UDF 2.1.1で規定された OSTA Compressed Unicodeを表現するための
+エンコーディングです。
+
+"Compression ID" + ":" + 文字列
+
+で表現されます。Compresseion IDが16または 255の場合、
+文字列に Unicode文字を書くことが許されます。
+
+
+= Appendix D
+
+Allocation Extent Descriptor(UDF_desc258)は、以下のように記述されます。
+
+-----------------------------------------------------------	
+        <UDF_desc258 gp="591872">
+            <desc-tag>
+                <tag-id>258</tag-id>
+                <desc-version>3</desc-version>
+                <tag-checksum>153</tag-checksum>
+                <reserved size="1">=00</reserved>
+                <tag-serial-number>1</tag-serial-number>
+                <desc-crc>20970</desc-crc>
+                <desc-crc-len>24</desc-crc-len>
+                <tag-loc>1</tag-loc>
+            </desc-tag>
+            <previous-alloc-extent-loc>0</previous-alloc-extent-loc>
+            <len-of-alloc-desc>16</len-of-alloc-desc>
+            <alloc-desc ref="EXTENT3_2" size="16">
+                <UDF_short_ad>
+                    <extent-len>0:65536</extent-len>
+                    <extent-pos>6560</extent-pos>
+                </UDF_short_ad>
+                <UDF_short_ad>
+                    <extent-len>0:65536</extent-len>
+                    <extent-pos>6592</extent-pos>
+                </UDF_short_ad>
+            </alloc-desc>
+        </UDF_desc258>
+-----------------------------------------------------------	
+
+ECMA167の規格(ECMA167 4/14.15)では、Allocation Descriptorのリストは
+Allocation Extent Descriptor内には含まれていませんが、
+XMLではUDF_desc258の子供として表現されます。
+
+

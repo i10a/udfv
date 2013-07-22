@@ -1,0 +1,377 @@
+%%com.udfv.ecma167
+%UDF_desc1 UDF_CrcDesc
+//
+//Primary Volume Descriptor
+//
+@Implements
+UDF_VolDesc, UDF_VolDescSeqNum
+@A
+Primary&nbsp;Volume&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+Volume Descriptor Sequence Number:uint32
+Primary Volume Descriptor Number:uint32
+Volume Identifier:dstring:32
+Volume Sequence Number:uint16::default=1
+Maximum Volume Sequence Number:uint16::default=1
+Interchange Level:uint16::default=3
+Maximum Interchange Level:uint16::default=3
+Character Set List:uint32::default=1
+Maximum Character Set List:uint32::default=1
+Volume Set Identifier:dstring:128
+Descriptor Character Set:charspec
+Explanatory Character Set:charspec
+Volume Abstract:extent_ad
+Volume Copyright Notice:extent_ad
+Application Identifier:regid
+Recording Date and Time:timestamp
+Implementation Identifier:regid
+Implementation Use:bytes:64
+Predecessor Volume Descriptor Sequence Location:uint32
+Flags:uint16
+Reserved:bytes:22
+@
+
+%UDF_desc2 UDF_CrcDesc
+//
+// Anchor Volume Descriptor Pointer
+//
+@A
+Anchor&nbsp;Volume&nbsp;Descriptor&nbsp;Pointer&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+Main Volume Descriptor Sequence Extent:extent_ad
+Reserve Volume Descriptor Sequence Extent:extent_ad
+Reserved:bytes:480
+@
+
+%UDF_desc3 UDF_CrcDesc
+//
+//  Volume Descriptor Pointer
+//
+@Implements
+UDF_VolDesc, UDF_VolDescSeqNum
+@A
+Volume&nbsp;Descriptor&nbsp;Pointer&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+Volume Descriptor Sequence Number:uint32
+Next Volume Descriptor Sequence Extent:extent_ad
+Reserved:bytes:484
+@
+
+%UDF_desc4 UDF_CrcDesc
+//
+// Implementation Use Volume Descriptor
+//
+@Implements
+UDF_VolDesc, UDF_VolDescSeqNum
+@A
+Implementation&nbsp;Use&nbsp;Volume&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+Volume Descriptor Sequence Number:uint32
+Implementation Identifier:regid
+Implementation Use:bytes:460
+@
+
+%UDF_desc5 UDF_CrcDesc
+//
+// Partition Descriptor
+//
+@Implements
+UDF_VolDesc, UDF_VolDescSeqNum, Comparable
+@A
+Partition&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+Volume Descriptor Sequence Number:uint32
+Partition Flags:uint16
+Partition Number:uint16
+Partition Contents:regid
+Partition Contents Use:bytes:128
+Access Type:uint32
+Partition Starting Location:uint32
+Partition Length:uint32
+Implementation Identifier:regid
+Implementation Use:bytes:128
+Reserved:bytes:156
+@
+
+%UDF_desc6 UDF_CrcDesc
+//
+// Logical Volume Descriptor
+//
+@Implements
+UDF_VolDesc, UDF_VolDescSeqNum
+@A
+Logical&nbsp;Volume&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+Volume Descriptor Sequence Number:uint32
+Descriptor Character Set:charspec
+Logical Volume Identifier:dstring:128
+Logical Block Size:uint32
+Domain Identifier:regid
+Logical Volume Contents Use:bytes:16
+Map Table Length:uint32
+Number of Partition Maps:uint32
+Implementation Identifier:regid
+Implementation Use:bytes:128
+Integrity Sequence Extent:extent_ad
+Partition Maps:bytes:getMapTableLen().getIntValue()
+@
+
+%UDF_desc7 UDF_CrcDesc
+//
+// Unallocated Space Descriptor
+//
+@Implements
+UDF_VolDesc, UDF_VolDescSeqNum
+@A
+Unallocated&nbsp;Space&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+Volume Descriptor Sequence Number:uint32
+Number of Allocation Descriptors:uint32
+Allocation Descriptors:bytes:getNumberOfAllocDesc().getIntValue()*8
+@
+
+%UDF_desc8 UDF_CrcDesc
+//
+// Terminating Descriptor
+//
+@Implements
+UDF_VolDesc
+@A
+Terminating&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+Reserved:bytes:496
+@
+
+%UDF_desc9 UDF_CrcDesc
+//
+// Logical Volume Integrity Descriptor
+//
+@Implements
+UDF_VolDesc
+@A
+Logical&nbsp;Volume&nbsp;Integrity&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+Recording Date and Time:timestamp
+Integrity Type:uint32
+Next Integrity Extent:extent_ad
+Logical Volume Contents Use:bytes:32
+Number of Partitions:uint32
+Length of Implementation Use:uint32
+Free Space Table:bytes:getNumberOfPart().getIntValue()*4
+Size Table:bytes:getNumberOfPart().getIntValue()*4
+Implementation Use:bytes:getLenOfImplUse().getIntValue()
+@
+
+%UDF_desc256 UDF_CrcDesc
+//
+// File Set Descriptor
+//
+@A
+File&nbsp;Set&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+Recording Date and Time:timestamp
+Interchange Level:uint16::default=3
+Maximum Interchange Level:uint16::default=3
+Character Set List:uint32::default=1
+Maximum Character Set List:uint32::default=1
+File Set Number:uint32
+File Set Descriptor Number:uint32
+Logical Volume Identifier Character Set:charspec
+Logical Volume Identifier:dstring:128
+File Set Character Set:charspec
+File Set Identifier:dstring:32
+Copyright File Identifier:dstring:32
+Abstract File Identifier:dstring:32
+Root Directory ICB:long_ad
+Domain Identifier:regid
+Next Extent:long_ad
+System Stream Directory ICB:long_ad
+Reserved:bytes:32
+@
+
+%UDF_desc257 UDF_CrcDesc
+@A
+File&nbsp;Identifier&nbsp;Descriptor&nbsp;を表現するクラス。
+@Q
+java.awt.*;
+java.awt.event.*;
+javax.swing.*;
+javax.swing.border.*;
+@L
+Descriptor Tag:tag
+File Version Number:uint16
+File Characteristics:uint8
+Length of File Identifier:uint8
+ICB:long_ad
+Length of Implementation Use:uint16
+Implementation Use:bytes:getLenOfImplUse().getIntValue()
+File Identifier:bytes:getLenOfFileId().getIntValue()
+Padding:pad:4
+@
+
+%UDF_desc258 UDF_ADDesc
+@A
+Allocation&nbsp;Extent&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+Previous Allocation Extent Location:uint32
+Length of Allocation Descriptors:uint32
+Allocation Descriptors:bytes:getLenOfAllocDesc().getIntValue()
+@
+
+%UDF_desc259 UDF_CrcDesc
+@Implements
+UDF_ICBDesc
+@A
+Indirect&nbsp;Entry&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+ICB Tag:icbtag
+Indirect ICB:long_ad
+@
+
+%UDF_desc260 UDF_CrcDesc
+@Implements
+UDF_ICBDesc
+@A
+Terminal&nbsp;Entry&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+ICB Tag:icbtag
+@
+
+%UDF_desc261 UDF_FEDesc
+@A
+File&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+ICB Tag:icbtag
+Uid:uint32::default=0xffffffffL
+Gid:uint32::default=0xffffffffL
+Permissions:uint32::default=32767
+File Link Count:uint16::default=1
+Record Format:uint8
+Record Display Attributes:uint8
+Record Length:uint32
+Information Length:uint64
+Logical Blocks Recorded:uint64
+Access Date and Time:timestamp
+Modification Date and Time:timestamp
+Attribute Date and Time:timestamp
+Checkpoint:uint32::default=1
+Extended Attribute ICB:long_ad
+Implementation Identifier:regid
+Unique Id:uint64
+Length of Extended Attribute:uint32
+Length of Allocation Descriptors:uint32
+Extended Attributes:bytes:getLenOfExtendedAttr().getIntValue()
+Allocation Descriptors:bytes:getLenOfAllocDesc().getIntValue()
+@
+
+%UDF_desc262 UDF_CrcDesc
+@A
+Extended&nbsp;Attribute&nbsp;Header&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+Implementation Attributes Location:uint32
+Application Attributes Location:uint32
+@
+
+%UDF_desc263 UDF_CrcDesc
+@Implements
+UDF_ICBDesc
+@A
+Unallocated&nbsp;Space&nbsp;Entry&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+ICB Tag:icbtag
+Length of Allocation Descriptors:uint32
+Allocation Descriptors:bytes:getLenOfAllocDesc().getIntValue()
+@
+
+%UDF_desc264 UDF_CrcDesc
+@A
+Space&nbsp;Bitmap&nbsp;Descriptor&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+Number Of Bits:uint32
+Number Of Bytes:uint32
+Bitmap:bitmap:getNumberOfBytes().getIntValue()
+@
+
+%UDF_desc265 UDF_CrcDesc
+@Implements
+UDF_ICBDesc
+@A
+Partition&nbsp;Integrity&nbsp;Entry&nbsp;を表現するクラス。
+
+@L
+Descriptor Tag:tag
+ICB Tag:icbtag
+Recording Date and Time:timestamp
+Integrity Type:uint8
+Reserved:bytes:175
+Implementation Identifier:regid
+Implementation Use:bytes:256
+@
+
+#%UDF_desc266 UDF_FEDesc
+#@A
+#Extended&nbsp;Filenbsp;Entry&nbsp;を表現するクラス。
+#
+#@L
+#Descriptor Tag:tag
+#ICB Tag:icbtag
+#Uid:uint32
+#Gid:uint32
+#Permissions:uint32
+#File Link Count:uint16
+#Record Format:uint8
+#Record Display Attributes:uint8
+#Record Length:uint32
+#Information Length:uint64
+#Object Size:uint64
+#Logical Blocks Recorded:uint64
+#Access Date and Time:timestamp
+#Modification Date and Time:timestamp
+#Creation Date and Time:timestamp
+#Attribute Date and Time:timestamp
+#Checkpoint:uint32
+#Reserved:bytes:4
+#Extended Attribute ICB:long_ad
+#Stream Directory ICB:long_ad
+#Implementation Identifier:regid
+#Unique Id:uint64
+#Length of Extended Attribute:uint32
+#Length of Allocation Descriptors:uint32
+#Extended Attributes:bytes:getLenOfExtendedAttr().getIntValue()
+#Allocation Descriptors:bytes:getLenOfAllocDesc().getIntValue()
+#@
+

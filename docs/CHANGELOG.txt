@@ -1,0 +1,32 @@
+== 2005/10/05 r1370 ==
+Multiple FileSetsであるとき、FSDS内の一番最後のFSDを読むように修正。
+
+== 2005/07/27 r1331 ==
+
+Type1 Partition MapがPartition Referece Number=0でないときに
+Volumeを正しく読めない問題を修正。
+
+== 2005/06/28 r1274 ==
+
+デフォルトでXMLにDOCTYPEを出力しないように変更。
+
+== 2005/06/22 r1257 ==
+
+<udf>ノードに revision="recorded_udf_revision"の形で revisionが attributeとして
+入るようになった。
+
+現在は入っているだけで、読むときは無視される。
+
+== 2005/06/11 r1144 ==
+
+XMLのattributeで mirror="yes"となっていたものを
+subno="1"となるように変更した。
+
+旧バージョンで作成した mirror="yes"となっているXMLは
+subno="1"と記述されていると見なされる。
+
+== 2005/06/?? ==
+
+<partition>の表記をなくした。
+変りに <part-info>および、<partmap-info>で表記するように修正。
+
