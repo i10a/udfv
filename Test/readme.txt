@@ -1,47 +1,63 @@
-$B!&(BVerifyConvert $B$*$h$S(BVerifyConvertAll $B$N;H$$J}(B
+#
+#   Copyright 2013 Heart Solutions Inc.
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
 
-$B!&(BVerifyConvert
+・VerifyConvert およびVerifyConvertAll の使い方
 
-./Test/VerifyConvert [(r | ri)] [$B%$%a!<%8%U%!%$%k(B] [udfv $B$N0z?t(B]
+・VerifyConvert
 
-$B;XDj$7$?%$%a!<%8%U%!%$%k$r(BXML (1)$B2=$7!"$=$N(BXML $B$r$b$H$K%$%a!<%8(B(2)$B$r:n$j!"(B
-$B$5$i$K$=$N%$%a!<%8$r(BXML(3) $B2=$7!"(B(1) $B$H(B(3) $B$N(BXML $B$HHf3S$7!"(B
-$B$=$N7k2L$rI8=`=PNO$K=PNO$9$k!#(B
+./Test/VerifyConvert [(r | ri)] [イメージファイル] [udfv の引数]
 
-(1)$B$O!"%$%a!<%8%U%!%$%k(B.cmpxml1 $B$H$$$&L>A0$G%+%l%s%H%G%#%l%/%H%j$K@8@.$9$k!#(B
-(2)$B$O!"%$%a!<%8%U%!%$%k(B.cmpimg $B$H$$$&L>A0$G%+%l%s%H%G%#%l%/%H%j$K@8@.$9$k!#(B
-(3)$B$O!"%$%a!<%8%U%!%$%k(B.cmpxml2 $B$H$$$&L>A0$G%+%l%s%H%G%#%l%/%H%j$K@8@.$9$k!#(B
+指定したイメージファイルをXML (1)化し、そのXML をもとにイメージ(2)を作り、
+さらにそのイメージをXML(3) 化し、(1) と(3) のXML と比較し、
+その結果を標準出力に出力する。
 
-$BBh(B2$B0z?t$K(Br $B$r;XDj$9$k$H!"Hf3S7k2L$rI8=`=PNO$K=PNO$7$?8e!"(B
-(1)$B!A(B(3) $B$N%U%!%$%k$rA4$F:o=|$9$k!#(B
-$BBh(B2$B0z?t$K(Bri $B$r;XDj$9$k$H!"Hf3S7k2L$rI8=`=PNO$K=PNO$7$?8e!"(B
-(2) $B$N%$%a!<%8$N$_$r:o=|$9$k!#(B
+(1)は、イメージファイル.cmpxml1 という名前でカレントディレクトリに生成する。
+(2)は、イメージファイル.cmpimg という名前でカレントディレクトリに生成する。
+(3)は、イメージファイル.cmpxml2 という名前でカレントディレクトリに生成する。
 
-(3) $B$N(BXML $B$O(B(2) $B$N%$%a!<%8$+$i@8@.$5$l$k$?$a!"DL>o$O(Bsrc-file $B$H$J$k(B
-$B%$%a!<%8%U%!%$%k$NCM$,0[$J$k$,!"(B(3) $B$G$O$3$NCM$O%*%j%8%J%k$N%$%a!<%8%U%!%$%kL>$K(B
-$B=$@5$5$l$k$?$a!"$3$NItJ,$K4X$7$F$N:90[$,Hf3S7k2L$K=PNO$5$l$k$3$H$O$J$$!#(B
+第2引数にr を指定すると、比較結果を標準出力に出力した後、
+(1)〜(3) のファイルを全て削除する。
+第2引数にri を指定すると、比較結果を標準出力に出力した後、
+(2) のイメージのみを削除する。
+
+(3) のXML は(2) のイメージから生成されるため、通常はsrc-file となる
+イメージファイルの値が異なるが、(3) ではこの値はオリジナルのイメージファイル名に
+修正されるため、この部分に関しての差異が比較結果に出力されることはない。
 
 
-$BNc!'(B
+例：
 ./Test/VerifyConvertAll /export6/verifyimg/udf34/T0000.IMG
 
 
 
-$B!&(BVerifyConvertAll
+・VerifyConvertAll
 
-./Test/VerifyConvertAll [$B%G%#%l%/%H%j(B] [udfv $B$N0z?t(B]
+./Test/VerifyConvertAll [ディレクトリ] [udfv の引数]
 
-$B;XDj$7$?%G%#%l%/%H%jD>2<$K$"$k!"(B
-$B3HD%;R(BIMG $B$N%U%!%$%kA4$F$KBP$7$F(BVerifyConvert $B$r9T$&!#(B
-$B%$%a!<%8%U%!%$%k$,BgNL$K@8@.$5$l$k$?$a!"(B
-VerifyConvertAll $B$G$O(B(1) $B$H(B(3) $B$N(BXML $B%U%!%$%k$N$_@8@.$7!"(B
-(2) $B$N%$%a!<%8$O@8@.8e<+F0E*$K:o=|$9$k!#(B
+指定したディレクトリ直下にある、
+拡張子IMG のファイル全てに対してVerifyConvert を行う。
+イメージファイルが大量に生成されるため、
+VerifyConvertAll では(1) と(3) のXML ファイルのみ生成し、
+(2) のイメージは生成後自動的に削除する。
 
-$B$^$?!"%$%a!<%8%U%!%$%k?t$,BgNL$K$"$k$HHs>o$K;~4V$,$+$+$k$?$a!"(B
-$BDL>o$O(Budfv $B$N0z?t$H$7$F(B'-filecopy false' $B$r;XDj$9$k!#(B
+また、イメージファイル数が大量にあると非常に時間がかかるため、
+通常はudfv の引数として'-filecopy false' を指定する。
 
 
-$BNc!'(B
+例：
 ./Test/VerifyConvertAll /export6/verifyimg/udf34/ -filecopy false
 
 
