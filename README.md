@@ -9,7 +9,11 @@ http://www.heart-s.com
 Build
 ----
 
-You just type *ant* at top-level directory.
+You just type 
+
+    $ ant
+    
+at top-level directory.
 
 
 Test
